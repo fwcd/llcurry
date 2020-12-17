@@ -1,4 +1,4 @@
-module LLCurry.IR.Type
+module LLCurry.IR.Types
     ( LLProg (..)
     ) where
 

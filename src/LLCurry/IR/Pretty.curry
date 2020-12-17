@@ -1,8 +1,6 @@
-module LLCurry.IR.Pretty
-    (
-    ) where
+module LLCurry.IR.Pretty where
 
-import LLCurry.IR.Type      ( LLProg (..) )
+import LLCurry.IR.Types     ( LLProg (..) )
 import LLCurry.Utils.Pretty ( Pretty (..) )
 
 -- TODO: Pretty instances for IR structures
