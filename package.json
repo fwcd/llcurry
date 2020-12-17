@@ -1,0 +1,14 @@
+{
+    "name": "llcurry",
+    "version": "0.0.1",
+    "author": "fwcd",
+    "synopsis": "Lightweight compiler from ICurry to LLVM",
+    "category": [ "Programming" ],
+    "license": "BSD-3-Clause",
+    "licenseFile": "LICENSE",
+    "dependencies": {},
+    "executable": {
+        "name": "llcurry",
+        "main": "LLCurry.Main"
+    }
+}
