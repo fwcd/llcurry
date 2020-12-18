@@ -8,16 +8,16 @@ import LLCurry.IR.Types
 -- Useful for testing the pretty-printer.
 helloWorldLLProg :: LLProg
 helloWorldLLProg = LLProg
-    { llProgGlobals = [ LLConstantDecl "hello" (LLValue (LLArrayType 13 (LLBasicType "i8")) (LLLitString "Hello World\\0A\\00"))
-                      , LLFuncDecl (LLBasicType "i32") "puts" [LLPtrType (LLBasicType "i8")]
-                      , LLFuncDef  (LLBasicType "i32") "main" []
+    { llProgGlobals = [ LLConstantDecl "hello" (LLValue (LLArrayType 13 i8) (LLLitString "Hello World\\0A\\00"))
+                      , LLFuncDecl i32 "puts" [LLPtrType i8]
+                      , LLFuncDef  i32 "main" []
                           [ LLBasicBlock Nothing
-                              [ LLLocalAssign "hello2" (LLGetElementPtrInst (LLArrayType 13 (LLBasicType "i8")) (LLValue (LLPtrType (LLArrayType 13 (LLBasicType "i8"))) (LLGlobalVar "hello"))
+                              [ LLLocalAssign "hello2" (LLGetElementPtrInst (LLArrayType 13 i8) (LLValue (LLPtrType (LLArrayType 13 i8)) (LLGlobalVar "hello"))
                                     [ LLValue (LLBasicType "i64") (LLLitInt 0)
                                     , LLValue (LLBasicType "i64") (LLLitInt 0)
                                     ])
-                              , LLCallInst (LLBasicType "i32") "puts" [LLValue (LLPtrType (LLBasicType "i8")) (LLLocalVar "hello2")]
-                              , LLReturnInst (LLValue (LLBasicType "i32") (LLLitInt 0))
+                              , LLCallInst i32 "puts" [LLValue (LLPtrType i8) (LLLocalVar "hello2")]
+                              , LLReturnInst (LLValue i32 (LLLitInt 0))
                               ]
                           ]
                       ]
