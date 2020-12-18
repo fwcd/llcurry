@@ -54,6 +54,7 @@ data LLInst = LLLocalAssign String LLInst                       -- not an actual
             | LLAllocaInst LLType (Maybe Int)                   -- Allocated type, optionally a number of elements
             | LLLoadInst LLType LLValue                         -- Loaded type, pointer
             | LLStoreInst LLValue LLValue                       -- Stored value, pointer
+            | LLGetElementPtrInst LLType LLValue [LLValue]      -- Base type, base pointer, indexes
               -- * Other instructions
             | LLCallInst LLType String [LLValue]                -- Return type, function name, function args
     deriving (Show, Eq)
