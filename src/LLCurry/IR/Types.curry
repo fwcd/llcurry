@@ -2,6 +2,7 @@ module LLCurry.IR.Types
     ( LLProg (..), LLGlobal (..), LLBasicBlock (..)
     , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
     , LLLabel (..), LLValue (..), LLUntyped (..), LLType (..)
+    , i1, i8, i32, i64, float, double
     ) where
 
 -- Useful references:
@@ -10,6 +11,10 @@ module LLCurry.IR.Types
 -- * https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html
 -- * https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/en/latest/README.html
 -- * http://www.cs.cmu.edu/afs/cs/academic/class/15745-s14/public/lectures/L6-LLVM-Part2-1up.pdf
+
+------------------------------------------------
+-- IR syntax tree                             --
+------------------------------------------------
 
 -- A program in LLVM IR.
 data LLProg = LLProg { llProgGlobals :: [LLGlobal]
@@ -113,3 +118,25 @@ data LLType = LLVoidType
             | LLArrayType  Int LLType
             | LLStructType String
     deriving (Show, Eq)
+
+------------------------------------------------
+-- Common LLVM types & convenience functions  --
+------------------------------------------------
+
+i1 :: LLType
+i1 = LLBasicType "i1"
+
+i8 :: LLType
+i8 = LLBasicType "i8"
+
+i32 :: LLType
+i32 = LLBasicType "i32"
+
+i64 :: LLType
+i64 = LLBasicType "i64"
+
+float :: LLType
+float = LLBasicType "float"
+
+double :: LLType
+double = LLBasicType "double"
