@@ -7,7 +7,9 @@ module LLCurry.IR.Translate
 import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.Except ( ExceptT, runExceptT, throwE )
 import Control.Monad.Trans.State  ( State, runState, get, modify )
-import ICurry.Types               ( IProg (..), IFunction (..) )
+import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
+                                  , IBlock (..), IQName
+                                  )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
                                   , LLType (..)
@@ -81,6 +83,17 @@ addGlobal g = modifyTrState $ \s -> s { globals = globals s ++ [g] }
 -- Runtime types and instructions             --
 ------------------------------------------------
 
+--- Curry objects are represented _dynamically_ at
+--- runtime, i.e. there is a single structure that
+--- can represent any applied Curry constructor
+--- (called 'CurryNode'). This structure additionally
+--- holds information about which type it belongs
+--- to, the constructor index and its reference count
+--- (WIP).
+---
+--- Every Curry object is heap-allocated using 'malloc'
+--- and reference-counted.
+
 --- The type name for applied Curry constructors.
 curryNodeName :: String
 curryNodeName = "CurryNode"
@@ -122,7 +135,7 @@ addRuntimeDecls = addGlobal curryNodeDecl
 allocCurryNode :: TrM String
 allocCurryNode = do
     i <- freshId
-    let ident = "currynode" ++ show i
+    let ident = "node_" ++ show i
     -- TODO: This assumes a 64-bit system
     -- TODO: Declare malloc
     addInst $ LLCallInst (LLPtrType i8) "malloc" [LLValue i64 (LLLitInt curryNodeByteSize)]
@@ -144,4 +157,23 @@ trIProg (IProg mod imps types funcs) = do
 
 --- Translates an ICurry function to LLVM IR.
 trIFunction :: IFunction -> TrM LLGlobal
-trIFunction (IFunction qn ar vis _ body) = error "TODO: Function generation not implemented"
+trIFunction (IFunction qn arity vis _ body) = case body of
+    -- TODO: Use visibility!
+    -- TODO: Figure out whether to use qn or name for external functions
+    IExternal name  -> return LLFuncDecl { llFuncType = curryNodePtrType
+                                         , llFuncName = name
+                                         , llFuncArgTypes = replicate arity curryNodePtrType
+                                         }
+    IFuncBody block -> return LLFuncDef  { llFuncType = curryNodePtrType 
+                                         , llFuncName = trIQName qn
+                                         , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . argName) [0 .. (arity - 1)]
+                                         , llFuncBlocks = [] -- TODO
+                                         }
+
+--- Combines a qualified ICurry name to a signle String.
+trIQName :: IQName -> String
+trIQName (loc, mod, n) = "qn_" ++ loc ++ "_" ++ mod ++ "_" ++ show n
+
+--- Fetches the name of the nth function argument.
+argName :: Int -> String
+argName i = "arg_" ++ show i

@@ -38,7 +38,7 @@ data LLGlobal = -- * A constant
                                , llFuncBlocks :: [LLBasicBlock]
                                }
                 -- * An (external) function declaration
-              | LLFuncDecl     { llFuncType :: LLType
+              | LLFuncDecl     { llFuncType :: LLType -- The return type
                                , llFuncName :: String
                                , llFuncArgTypes :: [LLType]
                                }
