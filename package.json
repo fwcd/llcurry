@@ -7,6 +7,8 @@
     "license": "BSD-3-Clause",
     "licenseFile": "LICENSE",
     "dependencies": {
+        "currypath": ">= 3.0.0, < 4.0.0",
+        "filepath": ">= 3.0.0, < 4.0.0",
         "icurry": ">= 3.0.0, < 4.0.0",
         "transformers": ">= 3.0.0, < 4.0.0",
         "wl-pprint": ">= 3.0.0, < 4.0.0"
