@@ -1,7 +1,7 @@
 module LLCurry.IR.Pretty where
 
 import LLCurry.IR.Types     ( LLProg (..) )
-import LLCurry.Utils.Pretty ( Pretty (..) )
+import Text.Pretty          ( Pretty (..) )
 
 -- TODO: Pretty instances for IR structures
 

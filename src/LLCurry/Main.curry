@@ -5,8 +5,8 @@ import ICurry.Types          ( IProg (..) )
 import LLCurry.IR.Pretty
 import LLCurry.IR.Translate  ( trIProg, runTrM )
 import LLCurry.IR.Types      ( LLProg (..) )
-import LLCurry.Utils.Pretty  ( Pretty (..) )
 import System.Environment    ( getArgs )
+import Text.Pretty           ( Pretty (..), pPrint )
 
 main :: IO ()
 main = do
@@ -17,4 +17,4 @@ main = do
     -- Translate to LLVM IR
     let llProg = runTrM $ trIProg iProg
     -- TODO: Save to *.ll file
-    putStrLn $ pretty (llProg :: LLProg)
+    putStrLn $ pPrint $ pretty (llProg :: LLProg)
