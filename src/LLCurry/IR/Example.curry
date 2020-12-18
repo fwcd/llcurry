@@ -4,10 +4,6 @@ module LLCurry.IR.Example
 
 import LLCurry.IR.Types
 
--- TODO: Global constants
--- TODO: GEP instruction
--- TODO: Define basic types like i32, i8, i1, ... somewhere for convenience
-
 -- A 'hello world' program in LLVM IR.
 -- Useful for testing the pretty-printer.
 helloWorldLLProg :: LLProg
