@@ -35,6 +35,10 @@ data LLInst = -- * Terminator instructions
               -- * Unary and binary operations
             | LLUnaryInst LLUnaryOp LLValue
             | LLBinaryInst LLBinaryOp LLValue LLValue
+              -- * Memory access and addressing instructions
+            | LLAllocaInst LLType (Maybe (LLType, Int))
+            | LLLoadInst LLType LLValue
+            | LLStoreInst LLValue LLValue
     deriving (Show, Eq)
 
 -- An unary operator in LLVM IR.
