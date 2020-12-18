@@ -69,9 +69,16 @@ data LLBinaryOp = LLAdd  -- Addition
     deriving (Show, Eq)
 
 -- A typed value in LLVM IR.
-data LLValue = LLValue { llValType :: LLType
-                       , llValName :: String
-                       }
+data LLValue = LLConstant LLType LLLit
+             | LLVariable LLType String
+    deriving (Show, Eq)
+
+-- A literal value in LLVM IR.
+data LLLit = LLLitBool Bool
+           | LLLitInt Int
+           | LLLitNull
+           | LLLitStruct [LLValue]
+           | LLLitArray [LLValue]
     deriving (Show, Eq)
 
 -- A type in LLVM IR.
