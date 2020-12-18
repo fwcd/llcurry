@@ -3,6 +3,7 @@ module LLCurry.IR.Types
     , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
     , LLLabel (..), LLValue (..), LLUntyped (..), LLType (..)
     , i1, i8, i32, i64, float, double
+    , makeBasicBlock
     ) where
 
 -- Useful references:
@@ -140,3 +141,6 @@ float = LLBasicType "float"
 
 double :: LLType
 double = LLBasicType "double"
+
+makeBasicBlock :: LLBasicBlock
+makeBasicBlock = LLBasicBlock Nothing []

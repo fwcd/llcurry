@@ -8,7 +8,7 @@ import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.Except ( ExceptT, runExceptT, throwE )
 import Control.Monad.Trans.State  ( State, runState, get, modify )
 import ICurry.Types               ( IProg (..) )
-import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..) )
+import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..) )
 
 ------------------------------------------------
 -- Utilities                                  --
@@ -60,6 +60,12 @@ popBlock = do
             modifyTrState $ \s -> s { blockStack = bs }
             return b
         [] -> throwE "Cannot pop from empty block stack!"
+
+--- Adds an instruction to the topmost block.
+addInst :: LLInst -> TrM ()
+addInst inst = do
+    b <- popBlock
+    pushBlock b { llBasicBlockInsts = llBasicBlockInsts b ++ [inst] }
 
 ------------------------------------------------
 -- Translation                                --
