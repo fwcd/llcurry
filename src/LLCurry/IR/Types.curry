@@ -1,5 +1,7 @@
 module LLCurry.IR.Types
-    ( LLProg (..)
+    ( LLProg (..), LLFunc (..), LLBasicBlock (..)
+    , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
+    , LLValue (..), LLLit (..), LLType (..)
     ) where
 
 -- Useful references:
@@ -82,8 +84,10 @@ data LLLit = LLLitBool Bool
     deriving (Show, Eq)
 
 -- A type in LLVM IR.
-data LLType = LLBasicType String -- A primitive type, e.g. double, i32, ...
-            | LLFuncType  LLType [LLType]
-            | LLPtrType   LLType
-            | LLArrayType Int LLType
+data LLType = LLVoidType
+            | LLBasicType  String -- A primitive type, e.g. double, i32, ...
+            | LLFuncType   LLType [LLType]
+            | LLPtrType    LLType
+            | LLArrayType  Int LLType
+            | LLStructType String
     deriving (Show, Eq)
