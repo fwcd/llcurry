@@ -25,7 +25,7 @@ data LLFunc = LLFunc { llFuncType :: LLType -- The return type
     deriving (Show, Eq)
 
 -- A labelled list of statements in LLVM IR.
-data LLBasicBlock = LLBasicBlock { llBasicBlockName :: String
+data LLBasicBlock = LLBasicBlock { llBasicBlockName :: Maybe String
                                  , llBasicBlockInsts :: [LLInst]
                                  }
     deriving (Show, Eq)

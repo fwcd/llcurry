@@ -29,7 +29,7 @@ instance Pretty LLFunc where
                               $$ indent level (vcat $ map pretty $ llFuncBlocks f)
                               $$ rbrace
 instance Pretty LLBasicBlock where
-    pretty bb = text (llBasicBlockName bb) <> colon
+    pretty bb = maybe empty ((<> colon) . text) (llBasicBlockName bb)
            $$ vcat (map pretty $ llBasicBlockInsts bb)
 
 instance Pretty LLProg where
