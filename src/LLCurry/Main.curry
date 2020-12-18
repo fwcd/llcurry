@@ -15,6 +15,6 @@ main = do
         []          -> error "Please specify the module name of a Curry program that has been compiled to ICurry!"
         (modName:_) -> readICurry modName
     -- Translate to LLVM IR
-    let llProg = runTrM $ trIProg iProg
-    -- TODO: Save to *.ll file
-    putStrLn $ pPrint $ pretty (llProg :: LLProg)
+    case runTrM $ trIProg iProg of
+        Right llProg -> putStrLn $ pPrint $ pretty (llProg :: LLProg) -- TODO: Save to *.ll file
+        Left e       -> error $ "Compilation failed: " ++ e
