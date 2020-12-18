@@ -16,7 +16,7 @@ helloWorldLLProg = LLProg
                       , LLFuncDecl (LLBasicType "i32") "puts" [LLPtrType (LLBasicType "i8")]
                       , LLFuncDef  (LLBasicType "i32") "main" []
                           [ LLBasicBlock Nothing
-                              [ LLLocalAssign "hello2" (LLGetElementPtrInst (LLArrayType 13 (LLBasicType "i8")) (LLValue (LLPtrType (LLArrayType 13 (LLBasicType "i8"))) (LLLocalVar "hello"))
+                              [ LLLocalAssign "hello2" (LLGetElementPtrInst (LLArrayType 13 (LLBasicType "i8")) (LLValue (LLPtrType (LLArrayType 13 (LLBasicType "i8"))) (LLGlobalVar "hello"))
                                     [ LLValue (LLBasicType "i64") (LLLitInt 0)
                                     , LLValue (LLBasicType "i64") (LLLitInt 0)
                                     ])
