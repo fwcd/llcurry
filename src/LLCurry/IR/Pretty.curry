@@ -29,6 +29,11 @@ instance Pretty LLGlobal where
     pretty f = case f of
         LLConstantDecl n v  -> text ('@' : n) <+> char '='
                                               <+> text "constant" <+> pretty v
+        LLTypeDecl n fs     -> text ('%' : n) <+> char '='
+                                              <+> text "type"
+                                              <+> lbrace
+                                              <+> commaSep (map pretty fs)
+                                              <+> rbrace
         LLFuncDef t n as bs -> (text "define" <+> pretty t
                                               <+> text ('@' : n) <> parens (commaSep $ map pretty as)
                                               <+> lbrace)

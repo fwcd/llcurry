@@ -27,6 +27,10 @@ data LLGlobal = -- * A constant
                 LLConstantDecl { llConstantName :: String
                                , llConstantValue :: LLValue
                                }
+                -- * A structure declaration
+              | LLTypeDecl     { llTypeName :: String
+                               , llTypeFields :: [LLType]
+                               }
                 -- * A function definition
               | LLFuncDef      { llFuncType :: LLType -- The return type
                                , llFuncName :: String
