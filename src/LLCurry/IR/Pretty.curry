@@ -43,22 +43,23 @@ instance Pretty LLBasicBlock where
 
 instance Pretty LLInst where
     pretty inst = case inst of
-        LLLocalAssign l i      -> text ('%' : l) <+> char '=' <+> pretty i
-        LLReturnInst r         -> text "ret" <+> pretty r
-        LLUncondBranchInst b   -> text "br" <+> pretty b
-        LLCondBranchInst c t f -> text "br" <+> pretty c <> comma
-                                            <+> pretty t <> comma
-                                            <+> pretty f
-        LLSwitchInst c o bs    -> text "switch" <+> pretty c <> comma
-                                                <+> pretty o
-                                                <+> brackets (align $ vcat $ map (\(v, l) -> pretty v <> comma <+> pretty l) bs)
-        LLUnaryInst op v       -> pretty op <+> pretty v
-        LLBinaryInst op l r    -> pretty op <+> pretty (llValType l) <+> pretty (llValUntyped l) <> comma
-                                                                     <+> pretty (llValUntyped r) -- TODO: Assert that left and right types are equal
-        LLAllocaInst t c       -> text "alloca" <+> pretty t <> maybe empty ((comma <+>) . (text "i32" <+>) . int) c
-        LLLoadInst t p         -> text "load" <+> pretty t <> comma <+> pretty p
-        LLStoreInst s p        -> text "store" <+> pretty s <> comma <+> pretty p
-        LLCallInst t n as      -> text "call" <+> pretty t <+> text ('@' : n) <> parens (commaSep $ map pretty as)
+        LLLocalAssign l i          -> text ('%' : l) <+> char '=' <+> pretty i
+        LLReturnInst r             -> text "ret" <+> pretty r
+        LLUncondBranchInst b       -> text "br" <+> pretty b
+        LLCondBranchInst c t f     -> text "br" <+> pretty c <> comma
+                                                <+> pretty t <> comma
+                                                <+> pretty f
+        LLSwitchInst c o bs        -> text "switch" <+> pretty c <> comma
+                                                    <+> pretty o
+                                                    <+> brackets (align $ vcat $ map (\(v, l) -> pretty v <> comma <+> pretty l) bs)
+        LLUnaryInst op v           -> pretty op <+> pretty v
+        LLBinaryInst op l r        -> pretty op <+> pretty (llValType l) <+> pretty (llValUntyped l) <> comma
+                                                                         <+> pretty (llValUntyped r) -- TODO: Assert that left and right types are equal
+        LLAllocaInst t c           -> text "alloca" <+> pretty t <> maybe empty ((comma <+>) . (text "i32" <+>) . int) c
+        LLLoadInst t p             -> text "load" <+> pretty t <> comma <+> pretty p
+        LLStoreInst s p            -> text "store" <+> pretty s <> comma <+> pretty p
+        LLGetElementPtrInst b p is -> text "getelementptr" <+> pretty b <> comma <+> pretty p <> hcat (map ((comma <+>) . pretty) is)
+        LLCallInst t n as          -> text "call" <+> pretty t <+> text ('@' : n) <> parens (commaSep $ map pretty as)
 
 instance Pretty LLLabel where
     pretty (LLLabel l) = text "label" <+> text ('%' : l)
