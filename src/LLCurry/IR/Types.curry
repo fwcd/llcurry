@@ -7,6 +7,7 @@ module LLCurry.IR.Types
 -- * https://llvm.org/doxygen/dir_c3e93f23a4a31c717998b98ce143b7c0.html
 -- * https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html
 -- * https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/en/latest/README.html
+-- * http://www.cs.cmu.edu/afs/cs/academic/class/15745-s14/public/lectures/L6-LLVM-Part2-1up.pdf
 
 -- A program in LLVM IR.
 data LLProg = LLProg { llProgFuncs :: [LLFunc]
@@ -28,17 +29,18 @@ data LLBasicBlock = LLBasicBlock { llBasicBlockName :: String
 
 -- An instruction/statement in LLVM IR.
 data LLInst = -- * Terminator instructions
-              LLBranchInst
-            | LLSwitchInst
-            | LLCallInst
-            | LLReturnInst
+              LLReturnInst LLValue                            -- Returned value
+            | LLBranchInst LLValue String String              -- Condition value, ifTrue block label, ifFalse block label
+            | LLSwitchInst LLValue String [(LLValue, String)] -- Condition value, otherwise block label, values and block labels
               -- * Unary and binary operations
-            | LLUnaryInst LLUnaryOp LLValue
+            | LLUnaryInst LLUnaryOp LLValue                   -- Operator, operand
             | LLBinaryInst LLBinaryOp LLValue LLValue
               -- * Memory access and addressing instructions
-            | LLAllocaInst LLType (Maybe (LLType, Int))
-            | LLLoadInst LLType LLValue
-            | LLStoreInst LLValue LLValue
+            | LLAllocaInst LLType (Maybe Int)                 -- Allocated type, optionally a number of elements
+            | LLLoadInst LLType LLValue                       -- Loaded type, pointer
+            | LLStoreInst LLValue LLValue                     -- Stored value, pointer
+              -- * Other instructions
+            | LLCallInst LLType String [LLValue]              -- Return type, function name, function args
     deriving (Show, Eq)
 
 -- An unary operator in LLVM IR.
