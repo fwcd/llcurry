@@ -1,7 +1,7 @@
 module LLCurry.IR.Types
     ( LLProg (..), LLFunc (..), LLBasicBlock (..)
     , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
-    , LLValue (..), LLLit (..), LLType (..)
+    , LLValue (..), LLLabel (..), LLUntyped (..), LLType (..)
     ) where
 
 -- Useful references:
@@ -31,18 +31,23 @@ data LLBasicBlock = LLBasicBlock { llBasicBlockName :: String
 
 -- An instruction/statement in LLVM IR.
 data LLInst = -- * Terminator instructions
-              LLReturnInst LLValue                            -- Returned value
-            | LLBranchInst LLValue String String              -- Condition value, ifTrue block label, ifFalse block label
-            | LLSwitchInst LLValue String [(LLValue, String)] -- Condition value, otherwise block label, values and block labels
+              LLReturnInst LLValue                              -- Returned value
+            | LLUncondBranchInst LLLabel                        -- Block label (unconditional jump)
+            | LLCondBranchInst LLValue LLLabel LLLabel          -- Condition value, ifTrue block label, ifFalse block label
+            | LLSwitchInst LLValue LLLabel [(LLValue, LLLabel)] -- Condition value, otherwise block label, values and block labels
               -- * Unary and binary operations
-            | LLUnaryInst LLUnaryOp LLValue                   -- Operator, operand
+            | LLUnaryInst LLUnaryOp LLValue                     -- Operator, operand
             | LLBinaryInst LLBinaryOp LLValue LLValue
               -- * Memory access and addressing instructions
-            | LLAllocaInst LLType (Maybe Int)                 -- Allocated type, optionally a number of elements
-            | LLLoadInst LLType LLValue                       -- Loaded type, pointer
-            | LLStoreInst LLValue LLValue                     -- Stored value, pointer
+            | LLAllocaInst LLType (Maybe Int)                   -- Allocated type, optionally a number of elements
+            | LLLoadInst LLType LLValue                         -- Loaded type, pointer
+            | LLStoreInst LLValue LLValue                       -- Stored value, pointer
               -- * Other instructions
-            | LLCallInst LLType String [LLValue]              -- Return type, function name, function args
+            | LLCallInst LLType String [LLValue]                -- Return type, function name, function args
+    deriving (Show, Eq)
+
+-- A referenced label.
+newtype LLLabel = LLLabel String
     deriving (Show, Eq)
 
 -- An unary operator in LLVM IR.
@@ -71,16 +76,19 @@ data LLBinaryOp = LLAdd  -- Addition
     deriving (Show, Eq)
 
 -- A typed value in LLVM IR.
-data LLValue = LLConstant LLType LLLit
-             | LLVariable LLType String
+data LLValue = LLValue { llValType :: LLType
+                       , llValUntyped :: LLUntyped
+                       }
     deriving (Show, Eq)
 
--- A literal value in LLVM IR.
-data LLLit = LLLitBool Bool
-           | LLLitInt Int
-           | LLLitNull
-           | LLLitStruct [LLValue]
-           | LLLitArray [LLValue]
+-- An untyped value in LLVM IR.
+data LLUntyped = LLLitBool Bool
+               | LLLitInt Int
+               | LLLitNull
+               | LLLitStruct [LLValue]
+               | LLLitArray [LLValue]
+               | LLLocalVar String
+               | LLGlobalVar String
     deriving (Show, Eq)
 
 -- A type in LLVM IR.

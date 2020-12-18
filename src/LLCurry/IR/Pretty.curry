@@ -1,12 +1,12 @@
 module LLCurry.IR.Pretty where
 
-import LLCurry.IR.Types     ( LLProg (..)
+import LLCurry.IR.Types     ( LLProg (..), LLInst (..)
                             , LLBinaryOp (..), LLUnaryOp (..)
-                            , LLValue (..), LLLit (..), LLType (..)
+                            , LLValue (..), LLLabel (..), LLUntyped (..), LLType (..)
                             )
 import Text.Pretty          ( Pretty (..)
                             , (<+>), (<>), ($$), (<$+$>)
-                            , nest, hcat, punctuate
+                            , nest, hcat, vcat, punctuate
                             , parens, brackets, braces
                             , comma, space, char, int, text
                             )
@@ -19,6 +19,24 @@ level = 4
 
 instance Pretty LLProg where
     pretty = error "TODO: Implement LLVM IR pretty-printing!"
+
+instance Pretty LLInst where
+    pretty inst = case inst of
+        LLReturnInst r         -> text "ret" <+> pretty r
+        LLUncondBranchInst b   -> text "br" <+> pretty b
+        LLCondBranchInst c t f -> text "br" <+> pretty c <> comma
+                                            <+> pretty t <> comma
+                                            <+> pretty f
+        LLSwitchInst c o bs    -> text "switch" <+> pretty c <> comma
+                                                <+> pretty o
+                                                <+> brackets (vcat $ map (\(v, l) -> pretty v <> comma <+> pretty l) bs)
+        LLUnaryInst op v       -> pretty op <+> pretty v
+        LLBinaryInst op l r    -> pretty op <+> pretty (llValType l) <+> pretty (llValUntyped l) <> comma
+                                                                     <+> pretty (llValUntyped r) -- TODO: Assert that left and right types are equal
+        _ -> error "TODO"
+
+instance Pretty LLLabel where
+    pretty (LLLabel l) = text "label" <+> text ('%' : l)
 
 instance Pretty LLUnaryOp where
     pretty op = case op of
@@ -45,11 +63,9 @@ instance Pretty LLBinaryOp where
         LLXor  -> text "xor"
 
 instance Pretty LLValue where
-    pretty val = case val of
-        LLConstant t l -> pretty t <+> pretty l
-        LLVariable t s -> pretty t <+> text ('%' : s)
+    pretty (LLValue t u) = pretty t <+> pretty u
 
-instance Pretty LLLit where
+instance Pretty LLUntyped where
     pretty lit = case lit of
         LLLitBool b | b         -> text "true"
                     | otherwise -> text "false"
@@ -57,6 +73,8 @@ instance Pretty LLLit where
         LLLitNull               -> text "null"
         LLLitStruct vs          -> braces   $ hcat $ punctuate (comma <> space) $ map pretty vs
         LLLitArray vs           -> brackets $ hcat $ punctuate (comma <> space) $ map pretty vs
+        LLLocalVar v            -> text ('%' : v)
+        LLGlobalVar v           -> text ('@' : v)
 
 instance Pretty LLType where
     pretty ty = case ty of
