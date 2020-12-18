@@ -1,7 +1,7 @@
 module LLCurry.IR.Types
     ( LLProg (..), LLFunc (..), LLBasicBlock (..)
     , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
-    , LLValue (..), LLLabel (..), LLUntyped (..), LLType (..)
+    , LLLabel (..), LLValue (..), LLUntyped (..), LLType (..)
     ) where
 
 -- Useful references:
@@ -20,6 +20,7 @@ data LLProg = LLProg { llProgFuncs :: [LLFunc]
 data LLFunc = LLFunc { llFuncType :: LLType -- The return type
                      , llFuncName :: String
                      , llFuncArgs :: [LLValue]
+                     , llFuncBlocks :: [LLBasicBlock]
                      }
     deriving (Show, Eq)
 
