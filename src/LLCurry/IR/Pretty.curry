@@ -103,6 +103,6 @@ instance Pretty LLType where
         LLVoidType      -> text "void"
         LLBasicType s   -> text s
         LLFuncType r ps -> pretty r <+> parens (commaSep $ map pretty ps)
-        LLPtrType t     -> pretty t <+> char '*'
+        LLPtrType t     -> pretty t <> char '*'
         LLArrayType n t -> brackets $ int n <+> char 'x' <+> pretty t
         LLStructType s  -> text ('%' : s)
