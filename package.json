@@ -7,7 +7,8 @@
     "license": "BSD-3-Clause",
     "licenseFile": "LICENSE",
     "dependencies": {
-        "icurry": ">= 3.0.0, < 4.0.0"
+        "icurry": ">= 3.0.0, < 4.0.0",
+        "transformers": ">= 3.0.0, < 4.0.0"
     },
     "executable": {
         "name": "llcurry",
