@@ -1,6 +1,7 @@
 module LLCurry.IR.Pretty where
 
 import LLCurry.IR.Types     ( LLProg (..)
+                            , LLBinaryOp (..), LLUnaryOp (..)
                             , LLValue (..), LLLit (..), LLType (..)
                             )
 import Text.Pretty          ( Pretty (..)
@@ -18,6 +19,30 @@ level = 4
 
 instance Pretty LLProg where
     pretty = error "TODO: Implement LLVM IR pretty-printing!"
+
+instance Pretty LLUnaryOp where
+    pretty op = case op of
+        LLFNeg -> text "fneg"
+
+instance Pretty LLBinaryOp where
+    pretty op = case op of
+        LLAdd  -> text "add"
+        LLFAdd -> text "fadd"
+        LLSub  -> text "sub"
+        LLFSub -> text "fsub"
+        LLMul  -> text "mul"
+        LLFMul -> text "fmul"
+        LLUDiv -> text "udiv"
+        LLSDiv -> text "sdiv"
+        LLFDiv -> text "fdiv"
+        LLURem -> text "urem"
+        LLSRem -> text "srem"
+        LLShl  -> text "shl"
+        LLLShr -> text "lshr"
+        LLAShr -> text "ashr"
+        LLAnd  -> text "and"
+        LLOr   -> text "or"
+        LLXor  -> text "xor"
 
 instance Pretty LLValue where
     pretty val = case val of
