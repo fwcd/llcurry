@@ -1,5 +1,7 @@
 module LLCurry.IR.Pretty where
 
+import Prelude hiding ( empty )
+
 import LLCurry.IR.Types     ( LLProg (..), LLInst (..)
                             , LLBinaryOp (..), LLUnaryOp (..)
                             , LLValue (..), LLLabel (..), LLUntyped (..), LLType (..)
@@ -9,6 +11,7 @@ import Text.Pretty          ( Pretty (..)
                             , nest, hcat, vcat, punctuate
                             , parens, brackets, braces
                             , comma, space, char, int, text
+                            , empty
                             )
 
 -- TODO: Pretty instances for IR structures
@@ -33,7 +36,10 @@ instance Pretty LLInst where
         LLUnaryInst op v       -> pretty op <+> pretty v
         LLBinaryInst op l r    -> pretty op <+> pretty (llValType l) <+> pretty (llValUntyped l) <> comma
                                                                      <+> pretty (llValUntyped r) -- TODO: Assert that left and right types are equal
-        _ -> error "TODO"
+        LLAllocaInst t c       -> text "alloca" <+> pretty t <> maybe empty ((comma <+>) . (text "i32" <+>) . int) c
+        LLLoadInst t p         -> text "load" <+> pretty t <> comma <+> pretty p
+        LLStoreInst s p        -> text "store" <+> pretty s <> comma <+> pretty p
+        LLCallInst t n as      -> text "call" <+> pretty t <+> text ('@' : n) <> parens (hcat $ punctuate (comma <> space) $ map pretty as)
 
 instance Pretty LLLabel where
     pretty (LLLabel l) = text "label" <+> text ('%' : l)
