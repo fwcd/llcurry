@@ -1,5 +1,5 @@
 module LLCurry.IR.Types
-    ( LLProg (..), LLFunc (..), LLBasicBlock (..)
+    ( LLProg (..), LLGlobal (..), LLBasicBlock (..)
     , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
     , LLLabel (..), LLValue (..), LLUntyped (..), LLType (..)
     ) where
@@ -12,22 +12,26 @@ module LLCurry.IR.Types
 -- * http://www.cs.cmu.edu/afs/cs/academic/class/15745-s14/public/lectures/L6-LLVM-Part2-1up.pdf
 
 -- A program in LLVM IR.
-data LLProg = LLProg { llProgFuncs :: [LLFunc]
+data LLProg = LLProg { llProgGlobals :: [LLGlobal]
                      }
     deriving (Show, Eq)
 
--- A function in LLVM IR.
-data LLFunc = -- * A function definition
-              LLFuncDef  { llFuncType :: LLType -- The return type
-                         , llFuncName :: String
-                         , llFuncArgs :: [LLValue]
-                         , llFuncBlocks :: [LLBasicBlock]
-                         }
-              -- * An (external) function declaration
-            | LLFuncDecl { llFuncType :: LLType
-                         , llFuncName :: String
-                         , llFuncArgTypes :: [LLType]
-                         }
+-- A global declaration or definition in LLVM IR.
+data LLGlobal = -- * A constant
+                LLConstantDecl { llConstantName :: String
+                               , llConstantValue :: LLValue
+                               }
+                -- * A function definition
+              | LLFuncDef      { llFuncType :: LLType -- The return type
+                               , llFuncName :: String
+                               , llFuncArgs :: [LLValue]
+                               , llFuncBlocks :: [LLBasicBlock]
+                               }
+                -- * An (external) function declaration
+              | LLFuncDecl     { llFuncType :: LLType
+                               , llFuncName :: String
+                               , llFuncArgTypes :: [LLType]
+                               }
     deriving (Show, Eq)
 
 -- A labelled list of statements in LLVM IR.
@@ -37,8 +41,9 @@ data LLBasicBlock = LLBasicBlock { llBasicBlockName :: Maybe String
     deriving (Show, Eq)
 
 -- An instruction/statement in LLVM IR.
-data LLInst = -- * Terminator instructions
-              LLReturnInst LLValue                              -- Returned value
+data LLInst = LLLocalAssign String LLInst                       -- not an actual instruction, used to represent SSA-assignments
+              -- * Terminator instructions
+            | LLReturnInst LLValue                              -- Returned value
             | LLUncondBranchInst LLLabel                        -- Block label (unconditional jump)
             | LLCondBranchInst LLValue LLLabel LLLabel          -- Condition value, ifTrue block label, ifFalse block label
             | LLSwitchInst LLValue LLLabel [(LLValue, LLLabel)] -- Condition value, otherwise block label, values and block labels
@@ -91,6 +96,7 @@ data LLValue = LLValue { llValType :: LLType
 -- An untyped value in LLVM IR.
 data LLUntyped = LLLitBool Bool
                | LLLitInt Int
+               | LLLitString String
                | LLLitNull
                | LLLitStruct [LLValue]
                | LLLitArray [LLValue]

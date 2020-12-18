@@ -2,14 +2,14 @@ module LLCurry.IR.Pretty where
 
 import Prelude hiding ( empty )
 
-import LLCurry.IR.Types     ( LLProg (..), LLFunc (..), LLInst (..), LLBasicBlock (..)
+import LLCurry.IR.Types     ( LLProg (..), LLGlobal (..), LLInst (..), LLBasicBlock (..)
                             , LLBinaryOp (..), LLUnaryOp (..)
                             , LLValue (..), LLLabel (..), LLUntyped (..), LLType (..)
                             )
 import Text.Pretty          ( Pretty (..), Doc
                             , (<+>), (<>), ($$), (<$+$>)
                             , nest, hcat, vcat, vsep, punctuate, align, indent
-                            , parens, brackets, braces, lbrace, rbrace
+                            , parens, brackets, braces, lbrace, rbrace, dquotes
                             , comma, colon, space, char, int, text
                             , empty
                             )
@@ -23,10 +23,12 @@ commaSep :: [Doc] -> Doc
 commaSep = hcat . punctuate (comma <> space)
 
 instance Pretty LLProg where
-    pretty p = vsep $ map pretty $ llProgFuncs p
+    pretty p = vsep $ map pretty $ llProgGlobals p
 
-instance Pretty LLFunc where
+instance Pretty LLGlobal where
     pretty f = case f of
+        LLConstantDecl n v  -> text ('@' : n) <+> char '='
+                                              <+> text "constant" <+> pretty v
         LLFuncDef t n as bs -> (text "define" <+> pretty t
                                               <+> text ('@' : n) <> parens (commaSep $ map pretty as)
                                               <+> lbrace)
@@ -41,6 +43,7 @@ instance Pretty LLBasicBlock where
 
 instance Pretty LLInst where
     pretty inst = case inst of
+        LLLocalAssign l i      -> text ('%' : l) <+> char '=' <+> pretty i
         LLReturnInst r         -> text "ret" <+> pretty r
         LLUncondBranchInst b   -> text "br" <+> pretty b
         LLCondBranchInst c t f -> text "br" <+> pretty c <> comma
@@ -92,6 +95,7 @@ instance Pretty LLUntyped where
         LLLitBool b | b         -> text "true"
                     | otherwise -> text "false"
         LLLitInt i              -> int i
+        LLLitString s           -> char 'c' <> dquotes (text s)
         LLLitNull               -> text "null"
         LLLitStruct vs          -> braces   $ commaSep $ map pretty vs
         LLLitArray vs           -> brackets $ commaSep $ map pretty vs
