@@ -8,7 +8,7 @@ import LLCurry.IR.Types     ( LLProg (..), LLFunc (..), LLInst (..), LLBasicBloc
                             )
 import Text.Pretty          ( Pretty (..), Doc
                             , (<+>), (<>), ($$), (<$+$>)
-                            , nest, hcat, vcat, punctuate, align, indent
+                            , nest, hcat, vcat, vsep, punctuate, align, indent
                             , parens, brackets, braces, lbrace, rbrace
                             , comma, colon, space, char, int, text
                             , empty
@@ -22,18 +22,22 @@ level = 4
 commaSep :: [Doc] -> Doc
 commaSep = hcat . punctuate (comma <> space)
 
+instance Pretty LLProg where
+    pretty p = vsep $ map pretty $ llProgFuncs p
+
 instance Pretty LLFunc where
-    pretty f = (text "define" <+> pretty (llFuncType f)
-                              <+> text ('@' : llFuncName f) <> parens (commaSep $ map pretty $ llFuncArgs f)
-                              <+> lbrace)
-                              $$ indent level (vcat $ map pretty $ llFuncBlocks f)
-                              $$ rbrace
+    pretty f = case f of
+        LLFuncDef t n as bs -> (text "define" <+> pretty t
+                                              <+> text ('@' : n) <> parens (commaSep $ map pretty as)
+                                              <+> lbrace)
+                                              $$ indent level (vcat $ map pretty bs)
+                                              $$ rbrace
+        LLFuncDecl t n as   -> text "declare" <+> pretty t
+                                              <+> text ('@' : n) <> parens (commaSep $ map pretty as)
+
 instance Pretty LLBasicBlock where
     pretty bb = maybe empty ((<> colon) . text) (llBasicBlockName bb)
            $$ vcat (map pretty $ llBasicBlockInsts bb)
-
-instance Pretty LLProg where
-    pretty = error "TODO: Implement LLVM IR pretty-printing!"
 
 instance Pretty LLInst where
     pretty inst = case inst of

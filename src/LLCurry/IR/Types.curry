@@ -17,11 +17,17 @@ data LLProg = LLProg { llProgFuncs :: [LLFunc]
     deriving (Show, Eq)
 
 -- A function in LLVM IR.
-data LLFunc = LLFunc { llFuncType :: LLType -- The return type
-                     , llFuncName :: String
-                     , llFuncArgs :: [LLValue]
-                     , llFuncBlocks :: [LLBasicBlock]
-                     }
+data LLFunc = -- * A function definition
+              LLFuncDef  { llFuncType :: LLType -- The return type
+                         , llFuncName :: String
+                         , llFuncArgs :: [LLValue]
+                         , llFuncBlocks :: [LLBasicBlock]
+                         }
+              -- * An (external) function declaration
+            | LLFuncDecl { llFuncType :: LLType
+                         , llFuncName :: String
+                         , llFuncArgTypes :: [LLType]
+                         }
     deriving (Show, Eq)
 
 -- A labelled list of statements in LLVM IR.
