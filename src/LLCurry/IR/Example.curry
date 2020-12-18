@@ -12,12 +12,13 @@ import LLCurry.IR.Types
 -- Useful for testing the pretty-printer.
 helloWorldLLProg :: LLProg
 helloWorldLLProg = LLProg
-    { llProgFuncs = [ LLFuncDecl (LLBasicType "i32") "puts" [LLPtrType (LLBasicType "i8")]
-                    , LLFuncDef  (LLBasicType "i32") "main" []
-                        [ LLBasicBlock Nothing
-                            [ LLCallInst (LLBasicType "i32") "puts" [LLValue (LLPtrType (LLBasicType "i8")) (LLLocalVar "hello")]
-                            , LLReturnInst (LLValue (LLBasicType "i32") (LLLitInt 0))
-                            ]
-                        ]
-                    ]
+    { llProgGlobals = [ LLConstantDecl "hello" (LLValue (LLArrayType 13 (LLBasicType "i8")) (LLLitString "Hello World\\0A\\00"))
+                      , LLFuncDecl (LLBasicType "i32") "puts" [LLPtrType (LLBasicType "i8")]
+                      , LLFuncDef  (LLBasicType "i32") "main" []
+                          [ LLBasicBlock Nothing
+                              [ LLCallInst (LLBasicType "i32") "puts" [LLValue (LLPtrType (LLBasicType "i8")) (LLLocalVar "hello")]
+                              , LLReturnInst (LLValue (LLBasicType "i32") (LLLitInt 0))
+                              ]
+                          ]
+                      ]
     }
