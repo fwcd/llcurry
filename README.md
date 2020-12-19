@@ -6,6 +6,12 @@ The generated LLVM IR code interfaces with the runtime, which is [written in C](
 
 > Note: The compiler is highly unfinished, mostly intended for experimentation and cannot correctly translate most Curry programs yet.
 
+## Prerequisites
+
+* A recent Curry compiler (e.g. [PAKCS](https://git.ps.informatik.uni-kiel.de/curry/pakcs))
+* The Curry Package Manager (included with PAKCS)
+* Clang (for compiling the runtime to LLVM IR)
+
 ## Usage
 
 <!-- TODO: Document how to build the runtime! -->
