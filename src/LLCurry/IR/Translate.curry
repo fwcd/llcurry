@@ -16,7 +16,7 @@ import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
                                   , LLType (..)
-                                  , i8, i32, i64, float, makeBasicBlock
+                                  , i8, i64, double, makeBasicBlock
                                   )
 
 ------------------------------------------------
@@ -196,20 +196,29 @@ trIAssign a = case a of
 --- with a custom identifier. Returns the variable name of the
 --- expression.
 trExpr :: Maybe String -> IExpr -> TrM String
-trExpr name e = case e of
-    IVar i   -> return $ varName i
-    ILit lit -> do
-        i <- freshId
-        let v = case lit of
-                    IInt i   -> LLValue i32 $ LLLitInt i
-                    IChar c  -> LLValue i8 $ LLLitInt $ ord c
-                    IFloat f -> LLValue float $ LLLitFloat f
-            ty = llValType v
-            n = maybe ("lit_" ++ show i) id name
-        addInst $ LLLocalAssign n $ LLAllocaInst ty Nothing
-        addInst $ LLStoreInst v (LLValue (LLPtrType ty) (LLLocalVar n))
-        return n
-    _        -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
+trExpr name e = do
+    i <- freshId
+    let n = maybe ("lit_" ++ show i) id name
+
+    case e of
+        IVar i         -> return $ varName i
+        ILit lit       -> do
+            i <- freshId
+            let v = case lit of
+                        IInt i   -> LLValue i64 $ LLLitInt i
+                        IChar c  -> LLValue i8 $ LLLitInt $ ord c
+                        IFloat f -> LLValue double $ LLLitFloat f
+                ty = llValType v
+            addInst $ LLLocalAssign n $ LLAllocaInst ty Nothing
+            addInst $ LLStoreInst v (LLValue (LLPtrType ty) (LLLocalVar n))
+            return n
+        IVarAccess i is -> do
+            -- TODO: Figure out whether this is the correct indexing order
+            --       or whether 'is' should be reversed.
+            let ivs = map (LLValue i64 . LLLitInt) $ 0 : is
+            addInst $ LLLocalAssign n $ LLGetElementPtrInst curryNodeType (LLValue curryNodePtrType (LLLocalVar $ varName i)) ivs
+            return n
+        _        -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
 --- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
