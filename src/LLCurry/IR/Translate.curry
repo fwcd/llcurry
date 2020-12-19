@@ -170,10 +170,51 @@ trIFunction (IFunction qn arity vis _ body) = case body of
                                          , llFuncBlocks = [] -- TODO
                                          }
 
---- Combines a qualified ICurry name to a signle String.
+--- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
-trIQName (loc, mod, n) = "qn_" ++ loc ++ "_" ++ mod ++ "_" ++ show n
+trIQName (loc, mod, n) = "qn_" ++ escapeString loc ++ "_" ++ escapeString mod ++ "_" ++ show n
 
---- Fetches the name of the nth function argument.
+--- Fetches the name/identifier of the nth function argument.
 argName :: Int -> String
 argName i = "arg_" ++ show i
+
+--- 'Escapes' a string for use in identifiers.
+escapeString :: String -> String
+escapeString = concatMap escapeChar
+
+--- 'Escapes' a character for use in identifiers.
+--- Source: https://git.ps.informatik.uni-kiel.de/curry/curry2go/-/blob/d76cceab303773ef34474da6cb39ce42ae5ff1ff/src/Curry2Go/Compiler.curry#L369
+escapeChar :: Char -> String
+escapeChar c = case c of
+    '$'  -> "dol"
+    ')'  -> "rb"
+    '('  -> "lb"
+    '+'  -> "add"
+    ','  -> "comma"
+    '.'  -> "-"
+    '#'  -> "hash"
+    '-'  -> "sub"
+    '*'  -> "mul"
+    '/'  -> "slash"
+    '%'  -> "percent"
+    '['  -> "lsb"
+    ']'  -> "rsb"
+    '{'  -> "lcb"
+    '}'  -> "rcb"
+    ':'  -> "col"
+    '^'  -> "pow"
+    '@'  -> "at"
+    '!'  -> "excl"
+    '?'  -> "qstn"
+    '&'  -> "and"
+    '='  -> "eq"
+    '<'  -> "lt"
+    '>'  -> "gt"
+    ';'  -> "semi"
+    '|'  -> "strt"
+    '\\' -> "bslash"
+    '\'' -> "squote"
+    '"'  -> "dquote"
+    '~'  -> "tilde"
+    '`'  -> "accent"
+    _    -> [c]
