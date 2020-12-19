@@ -151,9 +151,11 @@ allocCurryNode = do
 --- Translates the given ICurry program to LLVM IR.
 trIProg :: IProg -> TrM LLProg
 trIProg (IProg mod imps types funcs) = do
+    -- TODO: Imports & types!
     addRuntimeDecls
     llFuncs <- mapM trIFunction funcs
-    return $ LLProg llFuncs
+    st <- getTrState
+    return $ LLProg $ globals st ++ llFuncs
 
 --- Translates an ICurry function to LLVM IR.
 trIFunction :: IFunction -> TrM LLGlobal
