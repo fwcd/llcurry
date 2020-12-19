@@ -24,24 +24,27 @@ data LLProg = LLProg { llProgGlobals :: [LLGlobal]
 
 -- A global declaration or definition in LLVM IR.
 data LLGlobal = -- * A constant
-                LLConstantDecl { llConstantName :: String
-                               , llConstantValue :: LLValue
-                               }
+                LLConstantDecl   { llConstantName :: String
+                                 , llConstantValue :: LLValue
+                                 }
                 -- * A structure declaration
-              | LLTypeDecl     { llTypeName :: String
-                               , llTypeFields :: [LLType]
-                               }
+              | LLTypeDecl       { llTypeName :: String
+                                 , llTypeFields :: [LLType]
+                                 }
+                -- * An opaque type declaration
+              | LLOpaqueTypeDecl { llTypeName :: String
+                                 }
                 -- * A function definition
-              | LLFuncDef      { llFuncType :: LLType -- The return type
-                               , llFuncName :: String
-                               , llFuncArgs :: [LLValue]
-                               , llFuncBlocks :: [LLBasicBlock]
-                               }
+              | LLFuncDef        { llFuncType :: LLType -- The return type
+                                 , llFuncName :: String
+                                 , llFuncArgs :: [LLValue]
+                                 , llFuncBlocks :: [LLBasicBlock]
+                                 }
                 -- * An (external) function declaration
-              | LLFuncDecl     { llFuncType :: LLType -- The return type
-                               , llFuncName :: String
-                               , llFuncArgTypes :: [LLType]
-                               }
+              | LLFuncDecl       { llFuncType :: LLType -- The return type
+                                 , llFuncName :: String
+                                 , llFuncArgTypes :: [LLType]
+                                 }
     deriving (Show, Eq)
 
 -- A labelled list of statements in LLVM IR.

@@ -34,6 +34,9 @@ instance Pretty LLGlobal where
                                               <+> lbrace
                                               <+> commaSep (map pretty fs)
                                               <+> rbrace
+        LLOpaqueTypeDecl n  -> text ('%' : n) <+> char '='
+                                              <+> text "type"
+                                              <+> text "opaque"
         LLFuncDef t n as bs -> (text "define" <+> pretty t
                                               <+> text ('@' : n) <> parens (commaSep $ map pretty as)
                                               <+> lbrace)
