@@ -2,7 +2,7 @@
 
 An experimental compiler from [ICurry](https://git.ps.informatik.uni-kiel.de/curry-packages/icurry) (`.icy`) to [LLVM IR](https://llvm.org/docs/LangRef.html) (`.ll`).
 
-The generated LLVM IR code interfaces with the runtime, which is [written in C](runtime/runtime.c).
+The generated LLVM IR code [interfaces](examples/llvm/runtime-interfacing.ll) with the runtime, which is [written in C](runtime/runtime.c).
 
 > Note: The compiler is highly unfinished, mostly intended for experimentation and cannot correctly translate most Curry programs yet.
 
