@@ -83,7 +83,7 @@ addGlobal :: LLGlobal -> TrM ()
 addGlobal g = modifyTrState $ \s -> s { globals = globals s ++ [g] }
 
 ------------------------------------------------
--- Runtime types and instructions             --
+-- Runtime interfacing                        --
 ------------------------------------------------
 
 --- Curry objects are represented _dynamically_ at
@@ -99,39 +99,35 @@ addGlobal g = modifyTrState $ \s -> s { globals = globals s ++ [g] }
 
 --- The type name for applied Curry constructors.
 curryNodeName :: String
-curryNodeName = "CurryNode"
+curryNodeName = "struct.CurryNode"
 
---- A type that represents an applied Curry constructor.
+--- A type that represents a Curry node.
 curryNodeType :: LLType
 curryNodeType = LLStructType curryNodeName
 
---- A type that represents a pointer to an applied Curry constructor.
+--- A type that represents a pointer to a Curry node.
 curryNodePtrType :: LLType
 curryNodePtrType = LLPtrType curryNodeType
 
---- A type that represents applied Curry constructors at runtime.
---- Should be consistent with curryNodeByteSize.
-curryNodeDecl :: LLGlobal
-curryNodeDecl = LLTypeDecl curryNodeName
-    [ i64 -- The type index
-    , i64 -- The constructor index
-    , i64 -- The arity
-    -- TODO: Ref-counting?
-    , curryNodePtrType
-    ]
+--- The type of a generated Curry function. Takes a pointer to a
+--- Curry node pointer (an array at runtime).
+curryFunctionType :: LLType
+curryFunctionType = LLFuncType curryNodePtrType [LLPtrType curryNodePtrType]
 
---- The size of a Curry node in bytes.
---- Should be consistent with curryNodeDecl.
---- TODO: This currently assumes a 64-bit target
----       (The child ptr type is not necessarily
----       64 bits in size)
-curryNodeByteSize :: Int
-curryNodeByteSize = 4 * 64
-
---- Adds the declarations needed by the Curry runtime,
---- e.g. the Curry node structure.
+--- Adds the declarations needed to interface with the Curry runtime.
 addRuntimeDecls :: TrM ()
-addRuntimeDecls = addGlobal curryNodeDecl
+addRuntimeDecls = do
+    addGlobal $ LLOpaqueTypeDecl curryNodeName
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewData" [i8, i64, i64]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFunction" [i8, curryFunctionType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewInteger" [i64]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFloating" [double]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewCharacter" [i8]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeRetain" [curryNodePtrType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeRelease" [curryNodePtrType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeDataApply" [curryNodePtrType, curryNodePtrType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeFunctionApply" [curryNodePtrType, curryNodePtrType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodePrint" [curryNodePtrType]
 
 --- Allocates a new Curry node and returns the name of
 --- the pointer. Optionally takes a custom name for the
@@ -140,9 +136,11 @@ allocCurryNode :: Maybe String -> TrM String
 allocCurryNode name = do
     i <- freshId
     let n = maybe ("node_" ++ show i) id name
-    -- TODO: This assumes a 64-bit system
-    -- TODO: Declare malloc
-    addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "malloc" [LLValue i64 (LLLitInt curryNodeByteSize)]
+    addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
+        [ LLValue i8 $ LLLitInt 0
+        , LLValue i64 $ LLLitInt 0
+        , LLValue i64 $ LLLitInt 0
+        ] -- TODO: Use actual values
     -- TODO: Retain
     return n
 
