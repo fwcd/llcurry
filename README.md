@@ -42,3 +42,13 @@ Now you can, for example, output an example LLVM IR program:
 ```curry
 putStrLn $ pPrint $ pretty helloWorldLLProg
 ```
+
+### Fast Recompilation
+
+If no dependencies have changed since your last `install`, you can recompile the program more quickly by running
+
+```
+cypm install -x
+```
+
+This will skip the installation of package dependencies and directly compile/install `llcurry`.
