@@ -156,6 +156,8 @@ allocCurryNode name = do
 trIProg :: IProg -> TrM LLProg
 trIProg (IProg mod imps types funcs) = do
     -- TODO: Imports & types!
+    -- TODO: Forward-declare all locally defined functions
+    --       and/or sort them topologically
     addRuntimeDecls
     llFuncs <- mapM trIFunction funcs
     st <- getTrState
