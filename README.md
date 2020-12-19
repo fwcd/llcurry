@@ -2,9 +2,13 @@
 
 An experimental compiler from [ICurry](https://git.ps.informatik.uni-kiel.de/curry-packages/icurry) (`.icy`) to [LLVM IR](https://llvm.org/docs/LangRef.html) (`.ll`).
 
+The generated LLVM IR code interfaces with the runtime, which is [written in C](runtime/runtime.c).
+
 > Note: The compiler is highly unfinished, mostly intended for experimentation and cannot correctly translate most Curry programs yet.
 
 ## Usage
+
+<!-- TODO: Document how to build the runtime! -->
 
 To use this compile, first make sure to have a recent Curry compiler (e.g. PAKCS) and the Curry Package Manager (CPM) installed. Then run
 
