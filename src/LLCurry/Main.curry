@@ -17,12 +17,15 @@ main = do
     -- Read ICurry file (which is assumed to have already been compiled)
     (modName, iProg) <- case args of
         []    -> error "Please specify the module name of a Curry program that has been compiled to ICurry!"
-        (m:_) -> ((,) m) <$> readICurry m
+        (m:_) -> do
+            putStrLn $ "Reading ICurry program '" ++ m ++ "'..."
+            ((,) m) <$> readICurry m
 
     -- Translate to LLVM IR and save *.ll file into .curry folder
     case runTrM $ trIProg iProg of
         Right llProg -> do
-            let llOutputPath = inCurrySubdir $ modName <.> "ll"
+            let llOutputPath = (inCurrySubdir modName) <.> "ll"
                 llOutput = pPrint $ pretty (llProg :: LLProg)
             writeFile llOutputPath llOutput
+            putStrLn $ "LLVM IR written to '" ++ llOutputPath ++ "'"
         Left e       -> error $ "Compilation failed: " ++ e
