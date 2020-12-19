@@ -8,7 +8,7 @@ import LLCurry.IR.Types     ( LLProg (..), LLGlobal (..), LLInst (..), LLBasicBl
                             )
 import Text.Pretty          ( Pretty (..), Doc
                             , (<+>), (<>), ($$), (<$+$>)
-                            , nest, hcat, vcat, vsep, punctuate, align, indent
+                            , nest, hcat, vcat, vsepBlank, punctuate, align, indent
                             , parens, brackets, braces, lbrace, rbrace, dquotes
                             , comma, colon, space, char, int, text
                             , empty
@@ -23,7 +23,7 @@ commaSep :: [Doc] -> Doc
 commaSep = hcat . punctuate (comma <> space)
 
 instance Pretty LLProg where
-    pretty p = vsep $ map pretty $ llProgGlobals p
+    pretty p = vsepBlank $ map pretty $ llProgGlobals p
 
 instance Pretty LLGlobal where
     pretty f = case f of
