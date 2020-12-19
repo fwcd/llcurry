@@ -133,21 +133,6 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeFunctionApply" [curryNodePtrType, curryNodePtrType]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodePrint" [curryNodePtrType]
 
---- Allocates a new Curry node and returns the name of
---- the pointer. Optionally takes a custom name for the
---- pointer.
-allocCurryNode :: Maybe String -> TrM String
-allocCurryNode name = do
-    i <- freshId
-    let n = maybe ("node_" ++ show i) id name
-    addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
-        [ LLValue i8 $ LLLitInt 0
-        , LLValue i64 $ LLLitInt 0
-        , LLValue i64 $ LLLitInt 0
-        ] -- TODO: Use actual values
-    -- TODO: Retain
-    return n
-
 --- TODO: Retain/release functions for Curry nodes
 
 ------------------------------------------------
@@ -218,16 +203,12 @@ trExpr name e = do
         ILit lit       -> do
             -- Translate literal
             i <- freshId
-            let v = case lit of
-                        IInt i   -> LLValue i64 $ LLLitInt i
-                        IChar c  -> LLValue i8 $ LLLitInt $ ord c
-                        IFloat f -> LLValue double $ LLLitFloat f
-                ty = llValType v
+            let (fn, v) = case lit of
+                        IInt i   -> ("curryNodeNewInteger", LLValue i64 $ LLLitInt i)
+                        IChar c  -> ("curryNodeNewCharacter", LLValue i8 $ LLLitInt $ ord c)
+                        IFloat f -> ("curryNodeNewFloating", LLValue double $ LLLitFloat f)
                 n = maybe ("lit_" ++ show i) id name
-            -- FIXME: This is probably not quite correct, since literals
-            --        should be stored in Curry nodes too.
-            addInst $ LLLocalAssign n $ LLAllocaInst ty Nothing
-            addInst $ LLStoreInst v (LLValue (LLPtrType ty) (LLLocalVar n))
+            addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType fn [v]
             return n
         IVarAccess i is -> do
             -- Translate node indexing
