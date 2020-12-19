@@ -2,7 +2,7 @@
 
 An experimental compiler from [ICurry](https://git.ps.informatik.uni-kiel.de/curry-packages/icurry) (`.icy`) to [LLVM IR](https://llvm.org/docs/LangRef.html) (`.ll`).
 
-> Note: The compiler is highly work-in-progress and not yet ready for production usage!
+> Note: The compiler is highly unfinished, mostly intended for experimentation and cannot translate most Curry programs yet.
 
 ## Usage
 
