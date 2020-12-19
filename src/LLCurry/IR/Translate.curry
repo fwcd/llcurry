@@ -142,7 +142,7 @@ allocCurryNode name = do
     let n = maybe ("node_" ++ show i) id name
     -- TODO: This assumes a 64-bit system
     -- TODO: Declare malloc
-    addInst $ LLLocalAssign n $ LLCallInst (LLPtrType i8) "malloc" [LLValue i64 (LLLitInt curryNodeByteSize)]
+    addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "malloc" [LLValue i64 (LLLitInt curryNodeByteSize)]
     -- TODO: Retain
     return n
 
@@ -239,8 +239,9 @@ trExpr name e = do
             i <- freshId
             ans <- mapM (trExpr Nothing) as
             let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
+                ats = map (const curryNodePtrType) as
                 n = maybe ("call_" ++ show i) id name
-            addInst $ LLLocalAssign n $ LLCallInst curryNodeType (trIQName qn) avs
+            addInst $ LLLocalAssign n $ LLCallInst (LLFuncType curryNodePtrType ats) (trIQName qn) avs
             return n
         IFPCall qn _ as -> do
             -- Translate partial function call
@@ -249,8 +250,9 @@ trExpr name e = do
             i <- freshId
             ans <- mapM (trExpr Nothing) as
             let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
+                ats = map (const curryNodePtrType) as
                 n = maybe ("partial_call_" ++ show i) id name
-            addInst $ LLLocalAssign n $ LLCallInst curryNodeType (trIQName qn) avs
+            addInst $ LLLocalAssign n $ LLCallInst (LLFuncType curryNodePtrType ats) (trIQName qn) avs
             return n
         ICCall qn as -> do
             -- Translate constructor call
