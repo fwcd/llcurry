@@ -18,3 +18,27 @@ llcurry YourModule
 ```
 
 This will first compile the module to ICurry and then to LLVM IR. If everything went well, the resulting `YourModule.ll` file will be located in a subfolder of `.curry`.
+
+## Development
+
+### REPL
+
+For development, it is often useful to test individual functions in the REPL. To do this, just launch
+
+```
+pakcs
+```
+
+(or another Curry compiler) and load some modules, e.g.
+
+```
+:l LLCurry.IR.Example
+:add LLCurry.IR.Pretty
+:add Text.Pretty
+```
+
+Now you can, for example, output an example LLVM IR program:
+
+```curry
+putStrLn $ pPrint $ pretty helloWorldLLProg
+```
