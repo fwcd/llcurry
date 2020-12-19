@@ -134,16 +134,17 @@ addRuntimeDecls :: TrM ()
 addRuntimeDecls = addGlobal curryNodeDecl
 
 --- Allocates a new Curry node and returns the name of
---- the pointer.
-allocCurryNode :: TrM String
-allocCurryNode = do
+--- the pointer. Optionally takes a custom name for the
+--- pointer.
+allocCurryNode :: Maybe String -> TrM String
+allocCurryNode name = do
     i <- freshId
-    let ident = "node_" ++ show i
+    let n = maybe ("node_" ++ show i) id name
     -- TODO: This assumes a 64-bit system
     -- TODO: Declare malloc
-    addInst $ LLCallInst (LLPtrType i8) "malloc" [LLValue i64 (LLLitInt curryNodeByteSize)]
+    addInst $ LLLocalAssign n $ LLCallInst (LLPtrType i8) "malloc" [LLValue i64 (LLLitInt curryNodeByteSize)]
     -- TODO: Retain
-    return ident
+    return n
 
 --- TODO: Retain/release functions for Curry nodes
 
@@ -197,35 +198,51 @@ trIAssign a = case a of
 --- expression.
 trExpr :: Maybe String -> IExpr -> TrM String
 trExpr name e = do
-    i <- freshId
-    let n = maybe ("lit_" ++ show i) id name
-
     case e of
-        IVar i         -> return $ varName i
+        IVar i         -> do
+            -- Translate variable reference
+            return $ varName i
         ILit lit       -> do
+            -- Translate literal
             i <- freshId
             let v = case lit of
                         IInt i   -> LLValue i64 $ LLLitInt i
                         IChar c  -> LLValue i8 $ LLLitInt $ ord c
                         IFloat f -> LLValue double $ LLLitFloat f
                 ty = llValType v
+                n = maybe ("lit_" ++ show i) id name
             -- FIXME: This is probably not quite correct, since literals
             --        should be stored in Curry nodes too.
             addInst $ LLLocalAssign n $ LLAllocaInst ty Nothing
             addInst $ LLStoreInst v (LLValue (LLPtrType ty) (LLLocalVar n))
             return n
         IVarAccess i is -> do
+            -- Translate node indexing
             -- TODO: Figure out whether this is the correct indexing order
             --       or whether 'is' should be reversed.
+            i <- freshId
             let ivs = map (LLValue i64 . LLLitInt) $ 0 : is
+                n = maybe ("access_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLGetElementPtrInst curryNodeType (LLValue curryNodePtrType (LLLocalVar $ varName i)) ivs
             return n
         IFCall qn as -> do
+            -- Translate function call
+            i <- freshId
             ans <- mapM (trExpr Nothing) as
             let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
+                n = maybe ("call_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodeType (trIQName qn) avs
             return n
-        _        -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
+        ICCall qn as -> do
+            -- Translate constructor call
+            n <- allocCurryNode name
+            -- TODO: Translate constructor argument expression and
+            --       use store instructions to add them to the node
+            --       Perhaps 'allocCurryNode' should take an argument
+            --       that determines the child count? Note that this
+            --       would also affect the size-in-bytes of a curry node.
+            return n
+        _            -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
 --- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
