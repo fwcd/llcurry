@@ -11,7 +11,7 @@ import Control.Monad.Trans.State  ( State, runState, get, modify )
 import Data.Char                  ( ord )
 import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
                                   , IBlock (..), IQName, IVarIndex, IAssign (..)
-                                  , IExpr (..), ILiteral (..)
+                                  , IExpr (..), ILiteral (..), IStatement (..)
                                   )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
@@ -182,8 +182,9 @@ trIFunction (IFunction qn arity vis _ body) = case body of
 trIBlock :: IBlock -> TrM LLBasicBlock
 trIBlock (IBlock vs as stmt) = do
     pushBlock $ makeBasicBlock []
+    -- TODO: Handle variable declarations? ('vs')
     mapM_ trIAssign as
-    -- TODO: Handle statement
+    trIStatement stmt
     popBlock
 
 --- Translates a variable assignment to LLVM IR instructions
@@ -192,6 +193,14 @@ trIAssign :: IAssign -> TrM ()
 trIAssign a = case a of
     IVarAssign i expr     -> void $ trExpr (Just $ varName i) expr
     INodeAssign i js expr -> throwE "TODO: Node assign is not implemented yet!"
+
+--- Translates a statement to LLVM IR instructions.
+trIStatement :: IStatement -> TrM ()
+trIStatement stmt = case stmt of
+    IReturn e -> do
+        n <- trExpr Nothing e
+        addInst $ LLReturnInst (LLValue curryNodePtrType (LLLocalVar n))
+    _         -> throwE $ "TODO: Tried to translate unsupported statement " ++ show stmt
 
 --- Translates an expression to LLVM IR instructions, optionally
 --- with a custom identifier. Returns the variable name of the
