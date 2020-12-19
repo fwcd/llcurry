@@ -4,16 +4,19 @@ module LLCurry.IR.Translate
     , trIProg
     ) where
 
+import Control.Monad              ( void )
 import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.Except ( ExceptT, runExceptT, throwE )
 import Control.Monad.Trans.State  ( State, runState, get, modify )
+import Data.Char                  ( ord )
 import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
-                                  , IBlock (..), IQName
+                                  , IBlock (..), IQName, IVarIndex, IAssign (..)
+                                  , IExpr (..), ILiteral (..)
                                   )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
                                   , LLType (..)
-                                  , i8, i64
+                                  , i8, i32, i64, float, makeBasicBlock
                                   )
 
 ------------------------------------------------
@@ -44,7 +47,7 @@ getTrState = lift get
 modifyTrState :: (TrState -> TrState) -> TrM ()
 modifyTrState f = lift $ modify f
 
---- Fetches a fresh identifier.
+--- Fetches a fresh id.
 freshId :: TrM Int
 freshId = do
     st <- getTrState
@@ -166,15 +169,55 @@ trIFunction (IFunction qn arity vis _ body) = case body of
                                          , llFuncName = name
                                          , llFuncArgTypes = replicate arity curryNodePtrType
                                          }
-    IFuncBody block -> return LLFuncDef  { llFuncType = curryNodePtrType 
-                                         , llFuncName = trIQName qn
-                                         , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . argName) [0 .. (arity - 1)]
-                                         , llFuncBlocks = [] -- TODO
-                                         }
+    IFuncBody block -> do
+        b <- trIBlock block
+        return $ LLFuncDef { llFuncType = curryNodePtrType 
+                           , llFuncName = trIQName qn
+                           , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . argName) [0 .. (arity - 1)]
+                           , llFuncBlocks = [b]
+                           }
+
+--- Translates an ICurry block to LLVM IR.
+trIBlock :: IBlock -> TrM LLBasicBlock
+trIBlock (IBlock vs as stmt) = do
+    pushBlock $ makeBasicBlock []
+    mapM_ trIAssign as
+    -- TODO: Handle statement
+    popBlock
+
+--- Translates a variable assignment to LLVM IR instructions
+--- and adds them to the topmost block.
+trIAssign :: IAssign -> TrM ()
+trIAssign a = case a of
+    IVarAssign i expr     -> void $ trExpr (Just $ varName i) expr
+    INodeAssign i js expr -> throwE "TODO: Node assign is not implemented yet!"
+
+--- Translates an expression to LLVM IR instructions, optionally
+--- with a custom identifier. Returns the variable name of the
+--- expression.
+trExpr :: Maybe String -> IExpr -> TrM String
+trExpr name e = case e of
+    IVar i   -> return $ varName i
+    ILit lit -> do
+        i <- freshId
+        let v = case lit of
+                    IInt i   -> LLValue i32 $ LLLitInt i
+                    IChar c  -> LLValue i8 $ LLLitInt $ ord c
+                    IFloat f -> LLValue float $ LLLitFloat f
+            ty = llValType v
+            n = maybe ("lit_" ++ show i) id name
+        addInst $ LLLocalAssign n $ LLAllocaInst ty Nothing
+        addInst $ LLStoreInst v (LLValue (LLPtrType ty) (LLLocalVar n))
+        return n
+    _        -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
 --- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
 trIQName (loc, mod, n) = "qn_" ++ escapeString loc ++ "_" ++ escapeString mod ++ "_" ++ show n
+
+--- Fetches the name of a variable identified by an index.
+varName :: IVarIndex -> String
+varName i = "var_" ++ show i
 
 --- Fetches the name/identifier of the nth function argument.
 argName :: Int -> String

@@ -10,7 +10,7 @@ import Text.Pretty          ( Pretty (..), Doc
                             , (<+>), (<>), ($$), (<$+$>)
                             , nest, hcat, vcat, vsepBlank, punctuate, align, indent
                             , parens, brackets, braces, lbrace, rbrace, dquotes
-                            , comma, colon, space, char, int, text
+                            , comma, colon, space, char, int, float, text
                             , empty
                             )
 
@@ -101,6 +101,7 @@ instance Pretty LLUntyped where
         LLLitBool b | b         -> text "true"
                     | otherwise -> text "false"
         LLLitInt i              -> int i
+        LLLitFloat f            -> float f
         LLLitString s           -> char 'c' <> dquotes (text s)
         LLLitNull               -> text "null"
         LLLitStruct vs          -> braces   $ commaSep $ map pretty vs

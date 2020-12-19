@@ -107,6 +107,7 @@ data LLValue = LLValue { llValType :: LLType
 -- An untyped value in LLVM IR.
 data LLUntyped = LLLitBool Bool
                | LLLitInt Int
+               | LLLitFloat Float
                | LLLitString String
                | LLLitNull
                | LLLitStruct [LLValue]
@@ -146,5 +147,5 @@ float = LLBasicType "float"
 double :: LLType
 double = LLBasicType "double"
 
-makeBasicBlock :: LLBasicBlock
-makeBasicBlock = LLBasicBlock Nothing []
+makeBasicBlock :: [LLInst] -> LLBasicBlock
+makeBasicBlock = LLBasicBlock Nothing
