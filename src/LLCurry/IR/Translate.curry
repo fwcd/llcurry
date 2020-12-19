@@ -209,6 +209,8 @@ trExpr name e = do
                         IChar c  -> LLValue i8 $ LLLitInt $ ord c
                         IFloat f -> LLValue double $ LLLitFloat f
                 ty = llValType v
+            -- FIXME: This is probably not quite correct, since literals
+            --        should be stored in Curry nodes too.
             addInst $ LLLocalAssign n $ LLAllocaInst ty Nothing
             addInst $ LLStoreInst v (LLValue (LLPtrType ty) (LLLocalVar n))
             return n
@@ -217,6 +219,11 @@ trExpr name e = do
             --       or whether 'is' should be reversed.
             let ivs = map (LLValue i64 . LLLitInt) $ 0 : is
             addInst $ LLLocalAssign n $ LLGetElementPtrInst curryNodeType (LLValue curryNodePtrType (LLLocalVar $ varName i)) ivs
+            return n
+        IFCall qn as -> do
+            ans <- mapM (trExpr Nothing) as
+            let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
+            addInst $ LLLocalAssign n $ LLCallInst curryNodeType (trIQName qn) avs
             return n
         _        -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
