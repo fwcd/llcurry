@@ -10,6 +10,7 @@
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -178,4 +179,42 @@ void curryNodeFunctionApply(struct CurryNode *node, struct CurryNode *argument) 
     function->arguments[function->argumentCount] = argument;
     function->argumentCount++;
     curryNodeRetain(argument);
+}
+
+// Prints a Curry node to stdout for debugging purposes.
+void curryNodePrint(struct CurryNode *node) {
+    printf("CurryNode [%d refs] ", node->refCount);
+    switch (node->tag) {
+    case TAG_DATA:
+        {
+            struct CurryData *data = &node->value.data;
+            printf(
+                "DATA %" PRIu8 "/%" PRIu8 " args, type: %" PRIu64 ", constr: %" PRIu64,
+                data->argumentCount, data->arity, data->type, data->constructor
+            );
+        }
+        break;
+    case TAG_FUNCTION:
+        {
+            struct CurryFunction *function = &node->value.function;
+            printf(
+                "FUNCTION %" PRIu8 "/%" PRIu8 " args, %p",
+                function->argumentCount, function->arity, function->funcPtr
+            );
+        }
+        break;
+    case TAG_INTEGER:
+        printf("INTEGER %" PRIu64, node->value.integer);
+        break;
+    case TAG_FLOATING:
+        printf("FLOATING %lf", node->value.floating);
+        break;
+    case TAG_CHARACTER:
+        printf("CHARACTER %c", node->value.character);
+        break;
+    default:
+        printf("UNKNOWN");
+        break;
+    }
+    printf("\n");
 }
