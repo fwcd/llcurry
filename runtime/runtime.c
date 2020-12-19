@@ -4,6 +4,9 @@
  * it provides operations for allocating, initializing and freeing
  * such nodes, providing a layer of abstraction that the generated
  * LLVM IR code operates on.
+ * 
+ * It uses assertions to check for invariants that the code generator
+ * should maintain, these can however be disabled for performance.
  */
 
 #include <assert.h>
@@ -42,7 +45,7 @@ struct CurryFunction {
     struct CurryNode **arguments; // The partially applied arguments.
                                   // Generally allocated on the heap with
                                   // exactly 'arity' elements.
-    struct CurryNode *(*funcPtr)(struct CurryNode *);
+    struct CurryNode *(*funcPtr)(struct CurryNode **);
 };
 
 // Represents a value from Curry at runtime. Curry nodes are allocated on
@@ -85,7 +88,7 @@ struct CurryNode *curryNodeNewData(uint8_t arity, uint64_t type, uint64_t constr
 }
 
 // Creates a new function with no arguments applied to it.
-struct CurryNode *curryNodeNewFunction(uint8_t arity, struct CurryNode *(*funcPtr)(struct CurryNode *node)) {
+struct CurryNode *curryNodeNewFunction(uint8_t arity, struct CurryNode *(*funcPtr)(struct CurryNode **)) {
     assert(arity > 0);
     assert(funcPtr != NULL);
 
@@ -121,15 +124,58 @@ struct CurryNode *curryNodeNewCharacter(uint8_t character) {
 
 // Increments a Curry node's reference count.
 void curryNodeRetain(struct CurryNode *node) {
-    ++node->refCount;
+    node->refCount++;
 }
 
 // Decrements a Curry node's reference count. Once the reference count
 // drops to zero, this function will also _deallocate_ the node, which
 // means that every further access is undefined behavior.
 void curryNodeRelease(struct CurryNode *node) {
-    --node->refCount;
+    node->refCount--;
     if (node->refCount <= 0) {
+        struct CurryNode **arguments = NULL;
+        int argumentCount;
+
+        switch (node->tag) {
+        case TAG_DATA:
+            arguments = node->value.data.arguments;
+            argumentCount = node->value.data.argumentCount;
+            break;
+        case TAG_FUNCTION:
+            arguments = node->value.function.arguments;
+            argumentCount = node->value.function.argumentCount;
+            break;
+        default:
+            break;
+        }
+
+        if (arguments != NULL) {
+            for (int i = 0; i < argumentCount; i++) {
+                curryNodeRelease(arguments[i]);
+            }
+        }
+
         free(node);
     }
+}
+
+// Applies an argument to an unsatisfied data/constructor node.
+void curryNodeDataApply(struct CurryNode *node, struct CurryNode *argument) {
+    assert(node->tag == TAG_DATA);
+    struct CurryData *data = &node->value.data;
+    assert(data->argumentCount < data->arity);
+    data->arguments[data->argumentCount] = argument;
+    data->argumentCount++;
+    curryNodeRetain(argument);
+}
+
+// Applies an argument to a function node. Note that this does NOT
+// automatically evaluate the result once fully applied.
+void curryNodeFunctionApply(struct CurryNode *node, struct CurryNode *argument) {
+    assert(node->tag == TAG_FUNCTION);
+    struct CurryFunction *function = &node->value.function;
+    assert(function->argumentCount < function->arity);
+    function->arguments[function->argumentCount] = argument;
+    function->argumentCount++;
+    curryNodeRetain(argument);
 }

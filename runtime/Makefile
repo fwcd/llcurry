@@ -5,4 +5,4 @@ LL = $(CURDIR)/runtime.ll
 all: $(LL)
 
 $(LL): $(SRC)
-	clang -S -emit-llvm $(SRC)
+	clang -S -emit-llvm -Wall $(SRC)
