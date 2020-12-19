@@ -242,6 +242,16 @@ trExpr name e = do
                 n = maybe ("call_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodeType (trIQName qn) avs
             return n
+        IFPCall qn _ as -> do
+            -- Translate partial function call
+            -- TODO: This is not quite correct as functions expect
+            --       full application.
+            i <- freshId
+            ans <- mapM (trExpr Nothing) as
+            let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
+                n = maybe ("partial_call_" ++ show i) id name
+            addInst $ LLLocalAssign n $ LLCallInst curryNodeType (trIQName qn) avs
+            return n
         ICCall qn as -> do
             -- Translate constructor call
             n <- allocCurryNode name
@@ -251,7 +261,7 @@ trExpr name e = do
             --       that determines the child count? Note that this
             --       would also affect the size-in-bytes of a curry node.
             return n
-        _            -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
+        _ -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
 --- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
