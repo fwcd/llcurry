@@ -114,12 +114,16 @@ curryNodePtrType = LLPtrType curryNodeType
 curryFunctionType :: LLType
 curryFunctionType = LLFuncType curryNodePtrType [LLPtrType curryNodePtrType]
 
+--- The type that represents a point to a generated Curry function.
+curryFunctionPtrType :: LLType
+curryFunctionPtrType = LLPtrType curryFunctionType
+
 --- Adds the declarations needed to interface with the Curry runtime.
 addRuntimeDecls :: TrM ()
 addRuntimeDecls = do
     addGlobal $ LLOpaqueTypeDecl curryNodeName
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewData" [i8, i64, i64]
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFunction" [i8, curryFunctionType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFunction" [i8, curryFunctionPtrType]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewInteger" [i64]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFloating" [double]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewCharacter" [i8]
