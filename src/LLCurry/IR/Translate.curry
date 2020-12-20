@@ -220,10 +220,10 @@ trExpr name e = do
                 n = maybe ("access_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLGetElementPtrInst curryNodeType (LLValue curryNodePtrType (LLLocalVar $ varName i)) ivs
             return n
-        IFCall qn as -> do
+        IFCall qn@(_, ln, _) as -> do
             -- Translate function call
             i <- freshId
-            let n = maybe ("func_call_" ++ show i) id name
+            let n = maybe ("fcall_" ++ show i ++ "_" ++ escapeString ln) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewFunction"
                 [ LLValue i8 $ LLLitInt $ length as -- arity
                 , LLValue curryFunctionPtrType $ LLGlobalVar $ trIQName qn
@@ -235,10 +235,10 @@ trExpr name e = do
                     , LLValue curryNodePtrType $ LLLocalVar an
                     ]
             return n
-        IFPCall qn missing as -> do
+        IFPCall qn@(_, ln, _) missing as -> do
             -- Translate partial function call
             i <- freshId
-            let n = maybe ("partial_func_call_" ++ show i) id name
+            let n = maybe ("fpcall_" ++ show i ++ "_" ++ escapeString ln) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewFunction"
                 [ LLValue i8 $ LLLitInt $ missing + length as -- arity
                 , LLValue curryFunctionPtrType $ LLGlobalVar $ trIQName qn
@@ -250,10 +250,10 @@ trExpr name e = do
                     , LLValue curryNodePtrType $ LLLocalVar an
                     ]
             return n
-        ICCall qn as -> do
+        ICCall qn@(_, ln, _) as -> do
             -- Translate constructor call
             i <- freshId
-            let n = maybe ("constr_call_" ++ show i) id name
+            let n = maybe ("ccall_" ++ show i ++ "_" ++ escapeString ln) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
                 [ LLValue i8 $ LLLitInt $ length as -- arity
                 , LLValue i64 $ LLLitInt 0 -- TODO: Generate type id from qn
@@ -266,10 +266,10 @@ trExpr name e = do
                     , LLValue curryNodePtrType $ LLLocalVar an
                     ]
             return n
-        ICPCall qn missing as -> do
+        ICPCall qn@(_, ln, _) missing as -> do
             -- Translate partial constructor call
             i <- freshId
-            let n = maybe ("partial_constr_call_" ++ show i) id name
+            let n = maybe ("pccall_" ++ show i ++ "_" ++ escapeString ln) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
                 [ LLValue i8 (LLLitInt $ missing + length as) -- arity
                 , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
@@ -286,7 +286,7 @@ trExpr name e = do
 
 --- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
-trIQName (loc, mod, n) = "qn_" ++ escapeString loc ++ "_" ++ escapeString mod ++ "_" ++ show n
+trIQName (modName, locName, n) = "qn_" ++ escapeString modName ++ "_" ++ escapeString locName ++ "_" ++ show n
 
 --- Fetches the name of a variable identified by an index.
 varName :: IVarIndex -> String
