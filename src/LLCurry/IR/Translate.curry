@@ -223,22 +223,28 @@ trExpr name e = do
         IFCall qn as -> do
             -- Translate function call
             i <- freshId
-            ans <- mapM (trExpr Nothing) as
-            let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
-                ats = map (const curryNodePtrType) as
-                n = maybe ("call_" ++ show i) id name
-            addInst $ LLLocalAssign n $ LLCallInst (LLFuncType curryNodePtrType ats) (trIQName qn) avs
+            let n = maybe ("func_call_" ++ show i) id name
+            addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewFunction"
+                [ LLValue i8 (LLLitInt $ length as) -- arity
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate constructor index from qn
+                ]
+            forM_ as $ \a -> do
+                an <- trExpr Nothing a
+                addInst $ LLCallInst void_ "curryNodeFunctionApply" [LLValue curryNodePtrType $ LLLocalVar an]
             return n
-        IFPCall qn _ as -> do
+        IFPCall qn missing as -> do
             -- Translate partial function call
-            -- TODO: This is not quite correct as functions expect
-            --       full application.
             i <- freshId
-            ans <- mapM (trExpr Nothing) as
-            let avs = map (LLValue curryNodePtrType . LLLocalVar) ans
-                ats = map (const curryNodePtrType) as
-                n = maybe ("partial_call_" ++ show i) id name
-            addInst $ LLLocalAssign n $ LLCallInst (LLFuncType curryNodePtrType ats) (trIQName qn) avs
+            let n = maybe ("partial_func_call_" ++ show i) id name
+            addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewFunction"
+                [ LLValue i8 (LLLitInt $ missing + length as) -- arity
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate constructor index from qn
+                ]
+            forM_ as $ \a -> do
+                an <- trExpr Nothing a
+                addInst $ LLCallInst void_ "curryNodeFunctionApply" [LLValue curryNodePtrType $ LLLocalVar an]
             return n
         ICCall qn as -> do
             -- Translate constructor call
@@ -246,6 +252,19 @@ trExpr name e = do
             let n = maybe ("constr_call_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
                 [ LLValue i8 (LLLitInt $ length as) -- arity
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate constructor index from qn
+                ]
+            forM_ as $ \a -> do
+                an <- trExpr Nothing a
+                addInst $ LLCallInst void_ "curryNodeDataApply" [LLValue curryNodePtrType $ LLLocalVar an]
+            return n
+        ICPCall qn missing as -> do
+            -- Translate partial constructor call
+            i <- freshId
+            let n = maybe ("partial_constr_call_" ++ show i) id name
+            addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
+                [ LLValue i8 (LLLitInt $ missing + length as) -- arity
                 , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
                 , LLValue i64 (LLLitInt 0) -- TODO: Generate constructor index from qn
                 ]
