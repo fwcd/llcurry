@@ -128,11 +128,11 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewInteger" [i64]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFloating" [double]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewCharacter" [i8]
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeRetain" [curryNodePtrType]
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeRelease" [curryNodePtrType]
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeDataApply" [curryNodePtrType, curryNodePtrType]
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeFunctionApply" [curryNodePtrType, curryNodePtrType]
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodePrint" [curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryNodeRetain" [curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryNodeRelease" [curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryNodeDataApply" [curryNodePtrType, curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryNodeFunctionApply" [curryNodePtrType, curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryNodePrint" [curryNodePtrType]
 
 --- TODO: Retain/release functions for Curry nodes
 
