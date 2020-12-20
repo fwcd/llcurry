@@ -2,7 +2,7 @@ module LLCurry.IR.Types
     ( LLProg (..), LLGlobal (..), LLBasicBlock (..)
     , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
     , LLLabel (..), LLValue (..), LLUntyped (..), LLType (..)
-    , i1, i8, i32, i64, float, double
+    , i1, i8, i32, i64, float, double, void_
     , makeBasicBlock
     ) where
 
@@ -149,6 +149,9 @@ float = LLBasicType "float"
 
 double :: LLType
 double = LLBasicType "double"
+
+void_ :: LLType
+void_ = LLBasicType "void"
 
 makeBasicBlock :: [LLInst] -> LLBasicBlock
 makeBasicBlock = LLBasicBlock Nothing

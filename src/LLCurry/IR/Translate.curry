@@ -16,8 +16,9 @@ import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
                                   , LLType (..)
-                                  , i8, i64, double, makeBasicBlock
+                                  , i8, i64, double, void_, makeBasicBlock
                                   )
+import LLCurry.Utils.General      ( forM_ )
 
 ------------------------------------------------
 -- Utilities                                  --
@@ -241,12 +242,16 @@ trExpr name e = do
             return n
         ICCall qn as -> do
             -- Translate constructor call
-            n <- allocCurryNode name
-            -- TODO: Translate constructor argument expression and
-            --       use store instructions to add them to the node
-            --       Perhaps 'allocCurryNode' should take an argument
-            --       that determines the child count? Note that this
-            --       would also affect the size-in-bytes of a curry node.
+            i <- freshId
+            let n = maybe ("constr_call_" ++ show i) id name
+            addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
+                [ LLValue i8 (LLLitInt $ length as) -- arity
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
+                , LLValue i64 (LLLitInt 0) -- TODO: Generate constructor index from qn
+                ]
+            forM_ as $ \a -> do
+                an <- trExpr Nothing a
+                addInst $ LLCallInst void_ "curryNodeDataApply" [LLValue curryNodePtrType $ LLLocalVar an]
             return n
         _ -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
