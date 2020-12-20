@@ -231,7 +231,10 @@ trExpr name e = do
                 ]
             forM_ as $ \a -> do
                 an <- trExpr Nothing a
-                addInst $ LLCallInst void_ "curryNodeFunctionApply" [LLValue curryNodePtrType $ LLLocalVar an]
+                addInst $ LLCallInst void_ "curryNodeFunctionApply"
+                    [ LLValue curryNodePtrType $ LLLocalVar n
+                    , LLValue curryNodePtrType $ LLLocalVar an
+                    ]
             return n
         IFPCall qn missing as -> do
             -- Translate partial function call
@@ -244,7 +247,10 @@ trExpr name e = do
                 ]
             forM_ as $ \a -> do
                 an <- trExpr Nothing a
-                addInst $ LLCallInst void_ "curryNodeFunctionApply" [LLValue curryNodePtrType $ LLLocalVar an]
+                addInst $ LLCallInst void_ "curryNodeFunctionApply"
+                    [ LLValue curryNodePtrType $ LLLocalVar n
+                    , LLValue curryNodePtrType $ LLLocalVar an
+                    ]
             return n
         ICCall qn as -> do
             -- Translate constructor call
@@ -257,7 +263,10 @@ trExpr name e = do
                 ]
             forM_ as $ \a -> do
                 an <- trExpr Nothing a
-                addInst $ LLCallInst void_ "curryNodeDataApply" [LLValue curryNodePtrType $ LLLocalVar an]
+                addInst $ LLCallInst void_ "curryNodeDataApply"
+                    [ LLValue curryNodePtrType $ LLLocalVar n
+                    , LLValue curryNodePtrType $ LLLocalVar an
+                    ]
             return n
         ICPCall qn missing as -> do
             -- Translate partial constructor call
@@ -270,7 +279,10 @@ trExpr name e = do
                 ]
             forM_ as $ \a -> do
                 an <- trExpr Nothing a
-                addInst $ LLCallInst void_ "curryNodeDataApply" [LLValue curryNodePtrType $ LLLocalVar an]
+                addInst $ LLCallInst void_ "curryNodeDataApply"
+                    [ LLValue curryNodePtrType $ LLLocalVar n
+                    , LLValue curryNodePtrType $ LLLocalVar an
+                    ]
             return n
         _ -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
