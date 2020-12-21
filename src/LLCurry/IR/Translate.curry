@@ -138,6 +138,7 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl void_ "curryNodeDataApply" [curryNodePtrType, curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeFunctionApply" [curryNodePtrType, curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodePrint" [curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryExempt" []
 
 --- TODO: Retain/release functions for Curry nodes
 
@@ -204,6 +205,11 @@ trIAssign a = case a of
 --- Translates a statement to LLVM IR blocks.
 trIStatement :: IStatement -> TrM [LLBasicBlock]
 trIStatement stmt = case stmt of
+    IExempt -> do
+        pushBlock $ LLBasicBlock Nothing []
+        addInst $ LLCallInst void_ "curryExempt" []
+        b <- popBlock
+        return [b]
     IReturn e -> do
         pushBlock $ LLBasicBlock Nothing []
         n <- trExpr Nothing e

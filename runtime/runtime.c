@@ -301,3 +301,9 @@ void curryNodePrint(struct CurryNode *node) {
     }
     printf("\n");
 }
+
+// Terminates the program with a generic error message.
+void curryExempt(void) {
+    printf("Exempt!\n");
+    exit(1);
+}
