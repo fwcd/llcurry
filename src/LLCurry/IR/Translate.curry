@@ -189,7 +189,7 @@ trIBlock label (IBlock vs as stmt) = do
     mapM_ trIVarDecl vs
     mapM_ trIAssign as
     b <- popBlock
-    bs <- trIStatement stmt
+    bs <- trIStatement Nothing stmt
     return $ b : bs
 
 --- Translates a variable declaration to LLVM IR instructions.
@@ -211,22 +211,23 @@ trIAssign a = case a of
     INodeAssign i js expr -> throwE "TODO: Node assign is not implemented yet!"
 
 --- Translates a statement to LLVM IR blocks.
-trIStatement :: IStatement -> TrM [LLBasicBlock]
-trIStatement stmt = case stmt of
+trIStatement :: Maybe String -> IStatement -> TrM [LLBasicBlock]
+trIStatement label stmt = case stmt of
     IExempt -> do
-        pushBlock $ LLBasicBlock Nothing []
+        pushBlock $ LLBasicBlock label []
         addInst $ LLCallInst void_ "curryExempt" []
+        addInst LLUnreachable
         b <- popBlock
         return [b]
     IReturn e -> do
-        pushBlock $ LLBasicBlock Nothing []
+        pushBlock $ LLBasicBlock label []
         n <- trExpr Nothing e
         addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar n
         b <- popBlock
         return [b]
     ICaseCons i brs -> do
         el <- freshName "end"
-        let be = LLBasicBlock (Just el) []
+        be <- head <$> trIStatement (Just el) IExempt -- TODO: Handle the 'otherwise' case in a better way?
         bs <- mapM trIConsBranch brs
         pushBlock $ LLBasicBlock Nothing []
         cn <- freshName "constr"

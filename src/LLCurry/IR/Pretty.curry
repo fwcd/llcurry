@@ -60,6 +60,7 @@ instance Pretty LLInst where
         LLSwitchInst c o bs        -> text "switch" <+> pretty c <> comma
                                                     <+> pretty o
                                                     <+> brackets (align $ vcat $ map (\(v, l) -> pretty v <> comma <+> pretty l) bs)
+        LLUnreachable              -> text "unreachable"
         LLUnaryInst op v           -> pretty op <+> pretty v
         LLBinaryInst op l r        -> pretty op <+> pretty (llValType l) <+> pretty (llValUntyped l) <> comma
                                                                          <+> pretty (llValUntyped r) -- TODO: Assert that left and right types are equal

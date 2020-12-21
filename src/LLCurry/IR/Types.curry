@@ -60,6 +60,7 @@ data LLInst = LLLocalAssign String LLInst                       -- not an actual
             | LLUncondBranchInst LLLabel                        -- Block label (unconditional jump)
             | LLCondBranchInst LLValue LLLabel LLLabel          -- Condition value, ifTrue block label, ifFalse block label
             | LLSwitchInst LLValue LLLabel [(LLValue, LLLabel)] -- Condition value, otherwise block label, values and block labels
+            | LLUnreachable
               -- * Unary and binary operations
             | LLUnaryInst LLUnaryOp LLValue                     -- Operator, operand
             | LLBinaryInst LLBinaryOp LLValue LLValue
