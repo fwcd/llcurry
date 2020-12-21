@@ -57,6 +57,12 @@ freshId = do
     modifyTrState $ \s -> s { nextId = i + 1 }
     return i
 
+--- Fetches a fresh, prefixed identifier.
+freshName :: String -> TrM String
+freshName pf = do
+    i <- freshId
+    return $ pf ++ ('_' : show i)
+
 --- Pushes a new basic block onto the block stack.
 pushBlock :: LLBasicBlock -> TrM ()
 pushBlock b = do
@@ -132,6 +138,8 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewPlaceholder" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFailure" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeAccess" [curryNodePtrType, i64]
+    addGlobal $ LLFuncDecl i64 "curryNodeGetConstructor" [curryNodePtrType]
+    addGlobal $ LLFuncDecl void_ "curryNodeEvaluate" [curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeAssign" [curryNodePtrType, curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeRetain" [curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeRelease" [curryNodePtrType]
@@ -217,17 +225,22 @@ trIStatement stmt = case stmt of
         b <- popBlock
         return [b]
     ICaseCons i brs -> do
-        j <- freshId
-        let el = "end_" ++ show j
-            be = LLBasicBlock (Just el) []
+        el <- freshName "end"
+        let be = LLBasicBlock (Just el) []
         bs <- mapM trIConsBranch brs
         pushBlock $ LLBasicBlock Nothing []
-        addInst $ LLSwitchInst (LLValue curryNodePtrType $ LLLocalVar $ varName i) (LLLabel el)
+        cn <- freshName "constr"
+        let v = LLValue curryNodePtrType $ LLLocalVar $ varName i
+        addInst $ LLCallInst curryNodePtrType "curryNodeEvaluate" [v]
+        addInst $ LLLocalAssign cn $ LLCallInst i64 "curryNodeGetConstructor" [v]
+        addInst $ LLSwitchInst (LLValue i64 $ LLLocalVar cn) (LLLabel el)
             [(LLValue curryNodePtrType $ LLLocalVar $ trIQName qn, LLLabel n)
             | (IConsBranch qn a _, (LLBasicBlock (Just n) _ : _)) <- zip brs bs]
         b <- popBlock
-        return $ join bs ++ [be]
+        return $ b : (join bs ++ [be])
     _         -> throwE $ "TODO: Tried to translate unsupported statement " ++ show stmt
+
+-- TODO: Clean up code by using freshName where possible
 
 trIConsBranch :: IConsBranch -> TrM [LLBasicBlock]
 trIConsBranch (IConsBranch qn a b) = do

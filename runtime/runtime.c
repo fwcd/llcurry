@@ -258,6 +258,27 @@ void curryNodeFunctionApply(struct CurryNode *node, struct CurryNode *argument) 
     curryNodeRetain(argument);
 }
 
+// Evaluates a node to weak head normal form, i.e. so that it becomes
+// a constructor, built-in function or partiallly applied function.
+void curryNodeEvaluate(struct CurryNode *node) {
+    if (node->tag == TAG_FUNCTION) {
+        struct CurryFunction *function = &node->value.function;
+        assert(function->argumentCount <= function->arity);
+
+        // Evaluate if fully applied
+        if (function->argumentCount == function->arity) {
+            struct CurryNode *evaluated = function->funcPtr(function);
+            curryNodeAssign(node, evaluated);
+        }
+    }
+}
+
+// Fetches a Curry data node's constructor.
+uint64_t curryNodeGetConstructor(struct CurryNode *node) {
+    assert(node->tag == TAG_DATA);
+    return node->value.data.constructor;
+}
+
 // Prints a Curry node to stdout for debugging purposes.
 void curryNodePrint(struct CurryNode *node) {
     printf("CurryNode [%d refs] ", node->refCount);
