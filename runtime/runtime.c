@@ -150,35 +150,84 @@ void curryNodeRetain(struct CurryNode *node) {
     node->refCount++;
 }
 
+void curryNodeRelease(struct CurryNode *node);
+
+// Internal function for releasing only the arguments.
+void curryNodeReleaseArguments(struct CurryNode *node) {
+    struct CurryNode **arguments = NULL;
+    int argumentCount;
+
+    switch (node->tag) {
+    case TAG_DATA:
+        arguments = node->value.data.arguments;
+        argumentCount = node->value.data.argumentCount;
+        break;
+    case TAG_FUNCTION:
+        arguments = node->value.function.arguments;
+        argumentCount = node->value.function.argumentCount;
+        break;
+    default:
+        break;
+    }
+
+    if (arguments != NULL) {
+        for (int i = 0; i < argumentCount; i++) {
+            curryNodeRelease(arguments[i]);
+        }
+    }
+}
+
 // Decrements a Curry node's reference count. Once the reference count
 // drops to zero, this function will also _deallocate_ the node, which
 // means that every further access is undefined behavior.
 void curryNodeRelease(struct CurryNode *node) {
     node->refCount--;
     if (node->refCount <= 0) {
-        struct CurryNode **arguments = NULL;
-        int argumentCount;
-
-        switch (node->tag) {
-        case TAG_DATA:
-            arguments = node->value.data.arguments;
-            argumentCount = node->value.data.argumentCount;
-            break;
-        case TAG_FUNCTION:
-            arguments = node->value.function.arguments;
-            argumentCount = node->value.function.argumentCount;
-            break;
-        default:
-            break;
-        }
-
-        if (arguments != NULL) {
-            for (int i = 0; i < argumentCount; i++) {
-                curryNodeRelease(arguments[i]);
-            }
-        }
-
+        curryNodeReleaseArguments(node);
         free(node);
+    }
+}
+
+// Replaces a Curry node in-place. Note that the arguments
+// are now SHARED among both nodes.
+void curryNodeAssign(struct CurryNode *node, struct CurryNode *src) {
+    assert(src != NULL);
+    assert(src != node);
+    curryNodeReleaseArguments(node);
+    src->tag = node->tag;
+    switch (node->tag) {
+    case TAG_FUNCTION:
+        {
+            struct CurryFunction *srcFunction = &src->value.function;
+            struct CurryFunction *function = &node->value.function;
+            function->argumentCount = srcFunction->argumentCount;
+            function->arguments = srcFunction->arguments;
+            function->arity = srcFunction->arity;
+            function->funcPtr = srcFunction->funcPtr;
+        }
+        break;
+    case TAG_DATA:
+        {
+            struct CurryData *srcData = &src->value.data;
+            struct CurryData *data = &node->value.data;
+            data->argumentCount = srcData->argumentCount;
+            data->arguments = srcData->arguments;
+            data->arity = srcData->arity;
+            data->constructor = srcData->constructor;
+            data->type = srcData->type;
+        }
+        break;
+    case TAG_INTEGER:
+        node->value.integer = src->value.integer;
+        break;
+    case TAG_FLOATING:
+        node->value.floating = src->value.floating;
+        break;
+    case TAG_CHARACTER:
+        node->value.character = src->value.character;
+        break;
+    case TAG_PLACEHOLDER:
+        break;
     }
 }
 
