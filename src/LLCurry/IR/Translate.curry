@@ -18,7 +18,7 @@ import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLType (..)
                                   , i8, i64, double, void_, makeBasicBlock
                                   )
-import LLCurry.Utils.General      ( forM_ )
+import LLCurry.Utils.General      ( forM_, forFoldlM )
 
 ------------------------------------------------
 -- Utilities                                  --
@@ -212,15 +212,16 @@ trExpr name e = do
                 n = maybe ("lit_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType fn [v]
             return n
-        IVarAccess i is -> do
+        IVarAccess j js -> do
             -- Translate node indexing
-            -- TODO: Figure out whether this is the correct indexing order
-            --       or whether 'is' should be reversed.
-            i <- freshId
-            let ivs = map (LLValue i64 . LLLitInt) $ 0 : is
-                n = maybe ("access_" ++ show i) id name
-            addInst $ LLLocalAssign n $ LLGetElementPtrInst curryNodeType (LLValue curryNodePtrType (LLLocalVar $ varName i)) ivs
-            return n
+            forFoldlM (varName j) js $ \m j' -> do
+                i <- freshId
+                let n = maybe ("access_" ++ show i) id name
+                addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeAccess"
+                    [ LLValue curryNodePtrType $ LLLocalVar m
+                    , LLValue i64 $ LLLitInt j'
+                    ]
+                return n
         IFCall qn@(_, ln, _) as -> do
             -- Translate function call
             i <- freshId
