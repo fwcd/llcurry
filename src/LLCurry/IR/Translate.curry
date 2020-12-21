@@ -206,7 +206,7 @@ trIVarDecl d = case d of
 trIAssign :: IAssign -> TrM ()
 trIAssign a = case a of
     IVarAssign i expr     -> do
-        n <- trExpr Nothing expr
+        n <- trExpr expr
         addInst $ LLCallInst void_ "curryNodeAssign"
             [ LLValue curryNodePtrType $ LLLocalVar $ varName i
             , LLValue curryNodePtrType $ LLLocalVar n
@@ -224,7 +224,7 @@ trIStatement label stmt = case stmt of
         return [b]
     IReturn e -> do
         pushBlock $ LLBasicBlock label []
-        n <- trExpr Nothing e
+        n <- trExpr e
         addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar n
         b <- popBlock
         return [b]
@@ -267,43 +267,40 @@ trIStatement label stmt = case stmt of
         return $ b : (join bs ++ [be])
     _         -> throwE $ "TODO: Tried to translate unsupported statement " ++ show stmt
 
--- TODO: Clean up code by using freshName where possible
-
+--- Translates a constructor branch to LLVM IR blocks.
 trIConsBranch :: IConsBranch -> TrM [LLBasicBlock]
 trIConsBranch (IConsBranch _ _ b) = do
     n <- freshName "ccase"
     trIBlock (Just n) b
 
+--- Translates a constructor branch to LLVM IR blocks.
 trILitBranch :: ILitBranch -> TrM [LLBasicBlock]
 trILitBranch (ILitBranch _ b) = do
     n <- freshName "lcase"
     trIBlock (Just n) b
 
---- Translates an expression to LLVM IR instructions, optionally
---- with a custom identifier. Returns the variable name of the
---- expression.
-trExpr :: Maybe String -> IExpr -> TrM String
-trExpr name e = do
+--- Translates an expression to LLVM IR instructions. Returns the
+--- variable name the expression was assigned to.
+trExpr :: IExpr -> TrM String
+trExpr e = do
     case e of
         IVar i         -> do
             -- Translate variable reference
             return $ varName i
         ILit lit       -> do
             -- Translate literal
-            i <- freshId
+            n <- freshName "lit"
             let fn = case lit of
                         IInt _   -> "curryNodeNewInteger"
                         IChar _  -> "curryNodeNewCharacter"
                         IFloat _ -> "curryNodeNewFloating"
                 v = trILiteral lit
-                n = maybe ("lit_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType fn [v]
             return n
         IVarAccess j js -> do
             -- Translate node indexing
             forFoldlM (varName j) js $ \m j' -> do
-                i <- freshId
-                let n = maybe ("access_" ++ show i) id name
+                n <- freshName "access"
                 addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeAccess"
                     [ LLValue curryNodePtrType $ LLLocalVar m
                     , LLValue i64 $ LLLitInt j'
@@ -311,14 +308,13 @@ trExpr name e = do
                 return n
         IFCall qn@(_, ln, _) as -> do
             -- Translate function call
-            i <- freshId
-            let n = maybe ("fcall_" ++ show i ++ "_" ++ escapeString ln) id name
+            n <- freshName $ "fcall_" ++ escapeString ln
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewFunction"
                 [ LLValue i8 $ LLLitInt $ length as -- arity
                 , LLValue curryFunctionPtrType $ LLGlobalVar $ trIQName qn
                 ]
             forM_ as $ \a -> do
-                an <- trExpr Nothing a
+                an <- trExpr a
                 addInst $ LLCallInst void_ "curryNodeFunctionApply"
                     [ LLValue curryNodePtrType $ LLLocalVar n
                     , LLValue curryNodePtrType $ LLLocalVar an
@@ -326,14 +322,13 @@ trExpr name e = do
             return n
         IFPCall qn@(_, ln, _) missing as -> do
             -- Translate partial function call
-            i <- freshId
-            let n = maybe ("fpcall_" ++ show i ++ "_" ++ escapeString ln) id name
+            n <- freshName $ "fpcall_" ++ escapeString ln
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewFunction"
                 [ LLValue i8 $ LLLitInt $ missing + length as -- arity
                 , LLValue curryFunctionPtrType $ LLGlobalVar $ trIQName qn
                 ]
             forM_ as $ \a -> do
-                an <- trExpr Nothing a
+                an <- trExpr a
                 addInst $ LLCallInst void_ "curryNodeFunctionApply"
                     [ LLValue curryNodePtrType $ LLLocalVar n
                     , LLValue curryNodePtrType $ LLLocalVar an
@@ -341,15 +336,14 @@ trExpr name e = do
             return n
         ICCall qn@(_, ln, _) as -> do
             -- Translate constructor call
-            i <- freshId
-            let n = maybe ("ccall_" ++ show i ++ "_" ++ escapeString ln) id name
+            n <- freshName $ "ccall_" ++ escapeString ln
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
                 [ LLValue i8 $ LLLitInt $ length as -- arity
                 , LLValue i64 $ LLLitInt 0 -- TODO: Generate type id from qn
                 , LLValue i64 $ LLLitInt 0 -- TODO: Generate constructor index from qn
                 ]
             forM_ as $ \a -> do
-                an <- trExpr Nothing a
+                an <- trExpr a
                 addInst $ LLCallInst void_ "curryNodeDataApply"
                     [ LLValue curryNodePtrType $ LLLocalVar n
                     , LLValue curryNodePtrType $ LLLocalVar an
@@ -357,15 +351,14 @@ trExpr name e = do
             return n
         ICPCall qn@(_, ln, _) missing as -> do
             -- Translate partial constructor call
-            i <- freshId
-            let n = maybe ("pccall_" ++ show i ++ "_" ++ escapeString ln) id name
+            n <- freshName $ "pccall_" ++ escapeString ln
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewData"
                 [ LLValue i8 (LLLitInt $ missing + length as) -- arity
                 , LLValue i64 (LLLitInt 0) -- TODO: Generate type id from qn
                 , LLValue i64 (LLLitInt 0) -- TODO: Generate constructor index from qn
                 ]
             forM_ as $ \a -> do
-                an <- trExpr Nothing a
+                an <- trExpr a
                 addInst $ LLCallInst void_ "curryNodeDataApply"
                     [ LLValue curryNodePtrType $ LLLocalVar n
                     , LLValue curryNodePtrType $ LLLocalVar an
