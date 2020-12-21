@@ -113,7 +113,7 @@ curryNodePtrType = LLPtrType curryNodeType
 --- The type of a generated Curry function. Takes a pointer to a
 --- Curry node pointer (an array at runtime).
 curryFunctionType :: LLType
-curryFunctionType = LLFuncType curryNodePtrType [LLPtrType curryNodePtrType]
+curryFunctionType = LLFuncType curryNodePtrType [curryNodePtrType]
 
 --- The type that represents a point to a generated Curry function.
 curryFunctionPtrType :: LLType

@@ -46,7 +46,7 @@ struct CurryFunction {
     struct CurryNode **arguments; // The partially applied arguments.
                                   // Generally allocated on the heap with
                                   // exactly 'arity' elements.
-    struct CurryNode *(*funcPtr)(struct CurryNode **);
+    struct CurryNode *(*funcPtr)(struct CurryNode *);
 };
 
 // Represents a value from Curry at runtime. Curry nodes are allocated on
@@ -89,7 +89,7 @@ struct CurryNode *curryNodeNewData(uint8_t arity, uint64_t type, uint64_t constr
 }
 
 // Creates a new function with no arguments applied to it.
-struct CurryNode *curryNodeNewFunction(uint8_t arity, struct CurryNode *(*funcPtr)(struct CurryNode **)) {
+struct CurryNode *curryNodeNewFunction(uint8_t arity, struct CurryNode *(*funcPtr)(struct CurryNode *)) {
     assert(arity > 0);
     assert(funcPtr != NULL);
 
