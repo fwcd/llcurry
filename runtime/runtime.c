@@ -18,11 +18,12 @@
 // CurryNodes are represented as tagged unions,
 // the following constants define the semantics
 // of the tag.
-const uint8_t TAG_DATA      = 0; // Applied (data) constructors
-const uint8_t TAG_FUNCTION  = 1; // (Partially applied) functions
-const uint8_t TAG_INTEGER   = 2; // 64-bit integers
-const uint8_t TAG_FLOATING  = 3; // Floating-point numbers
-const uint8_t TAG_CHARACTER = 4; // 8-bit characters
+const uint8_t TAG_DATA        = 0; // Applied (data) constructors
+const uint8_t TAG_FUNCTION    = 1; // (Partially applied) functions
+const uint8_t TAG_INTEGER     = 2; // 64-bit integers
+const uint8_t TAG_FLOATING    = 3; // Floating-point numbers
+const uint8_t TAG_CHARACTER   = 4; // 8-bit characters
+const uint8_t TAG_PLACEHOLDER = 5; // Empty notes
 
 // TODO: Failures and choices!
 
@@ -114,6 +115,11 @@ struct CurryNode *curryNodeNewFloating(double floating) {
     struct CurryNode *node = curryNodeAllocate(TAG_FLOATING);
     node->value.floating = floating;
     return node;
+}
+
+// Creates a new placeholder node.
+struct CurryNode *curryNodeNewPlaceholder(void) {
+    return curryNodeAllocate(TAG_PLACEHOLDER);
 }
 
 // Accesses a node's nth argument.
@@ -227,6 +233,9 @@ void curryNodePrint(struct CurryNode *node) {
         break;
     case TAG_CHARACTER:
         printf("CHARACTER %c", node->value.character);
+        break;
+    case TAG_PLACEHOLDER:
+        printf("PLACEHOLDER");
         break;
     default:
         printf("UNKNOWN");
