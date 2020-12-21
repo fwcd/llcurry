@@ -261,6 +261,15 @@ void curryNodeFunctionApply(struct CurryNode *node, struct CurryNode *argument) 
 // Evaluates a node to weak head normal form, i.e. so that it becomes
 // a constructor, built-in function or partiallly applied function.
 void curryNodeEvaluate(struct CurryNode *node) {
+    // TODO: Handle nondeterminism & other tags:
+    //
+    //     Choice  -> Trigger pull-tabbing step
+    //     Failure -> Throw an error/exit the program?
+    //     Free    -> Instantiate to choice of shallow patterns, e.g.
+    //
+    //     head x where x free  ->  [] ? (y:ys) where y, ys free
+    //
+    // See section 5.2 in WFLP_19, ICurry (Antoy et al.)
     if (node->tag == TAG_FUNCTION) {
         struct CurryFunction *function = &node->value.function;
         assert(function->argumentCount <= function->arity);
