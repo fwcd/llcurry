@@ -231,11 +231,11 @@ trIStatement stmt = case stmt of
         pushBlock $ LLBasicBlock Nothing []
         cn <- freshName "constr"
         let v = LLValue curryNodePtrType $ LLLocalVar $ varName i
-        addInst $ LLCallInst curryNodePtrType "curryNodeEvaluate" [v]
+        addInst $ LLCallInst void_ "curryNodeEvaluate" [v]
         addInst $ LLLocalAssign cn $ LLCallInst i64 "curryNodeGetConstructor" [v]
         addInst $ LLSwitchInst (LLValue i64 $ LLLocalVar cn) (LLLabel el)
-            [(LLValue curryNodePtrType $ LLLocalVar $ trIQName qn, LLLabel n)
-            | (IConsBranch qn a _, (LLBasicBlock (Just n) _ : _)) <- zip brs bs]
+            [(LLValue i64 $ LLLitInt c, LLLabel n)
+            | (IConsBranch (_, _, c) a _, (LLBasicBlock (Just n) _ : _)) <- zip brs bs]
         b <- popBlock
         return $ b : (join bs ++ [be])
     _         -> throwE $ "TODO: Tried to translate unsupported statement " ++ show stmt

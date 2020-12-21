@@ -267,7 +267,7 @@ void curryNodeEvaluate(struct CurryNode *node) {
 
         // Evaluate if fully applied
         if (function->argumentCount == function->arity) {
-            struct CurryNode *evaluated = function->funcPtr(function);
+            struct CurryNode *evaluated = function->funcPtr(node);
             curryNodeAssign(node, evaluated);
         }
     }
