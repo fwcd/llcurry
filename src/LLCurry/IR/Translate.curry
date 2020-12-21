@@ -175,13 +175,13 @@ trIFunction (IFunction qn arity vis _ body) = case body of
     -- TODO: Figure out whether to use qn or name for external functions
     IExternal name  -> return LLFuncDecl { llFuncType = curryNodePtrType
                                          , llFuncName = name
-                                         , llFuncArgTypes = replicate arity curryNodePtrType
+                                         , llFuncArgTypes = [curryNodePtrType]
                                          }
     IFuncBody block -> do
         bs <- trIBlock Nothing block
         return $ LLFuncDef { llFuncType = curryNodePtrType 
                            , llFuncName = trIQName qn
-                           , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . varName) [0 .. (arity - 1)]
+                           , llFuncArgs = [LLValue curryNodePtrType $ LLLocalVar $ varName 0]
                            , llFuncBlocks = bs
                            }
 
