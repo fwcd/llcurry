@@ -271,13 +271,13 @@ trIStatement label stmt = case stmt of
 
 trIConsBranch :: IConsBranch -> TrM [LLBasicBlock]
 trIConsBranch (IConsBranch _ _ b) = do
-    i <- freshId
-    trIBlock (Just $ "ccase_" ++ show i) b
+    n <- freshName "ccase"
+    trIBlock (Just n) b
 
 trILitBranch :: ILitBranch -> TrM [LLBasicBlock]
 trILitBranch (ILitBranch _ b) = do
-    i <- freshId
-    trIBlock (Just $ "lcase_" ++ show i) b
+    n <- freshName "lcase"
+    trIBlock (Just n) b
 
 --- Translates an expression to LLVM IR instructions, optionally
 --- with a custom identifier. Returns the variable name of the
