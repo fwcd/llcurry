@@ -12,6 +12,7 @@ import Data.Char                  ( ord )
 import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
                                   , IBlock (..), IQName, IVarIndex, IAssign (..)
                                   , IExpr (..), ILiteral (..), IStatement (..)
+                                  , IVarDecl (..)
                                   )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
@@ -128,7 +129,9 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewInteger" [i64]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFloating" [double]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewCharacter" [i8]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewPlaceholder" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeAccess" [curryNodePtrType, i64]
+    addGlobal $ LLFuncDecl void_ "curryNodeAssign" [curryNodePtrType, curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeRetain" [curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeRelease" [curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeDataApply" [curryNodePtrType, curryNodePtrType]
@@ -165,7 +168,7 @@ trIFunction (IFunction qn arity vis _ body) = case body of
         b <- trIBlock block
         return $ LLFuncDef { llFuncType = curryNodePtrType 
                            , llFuncName = trIQName qn
-                           , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . argName) [0 .. (arity - 1)]
+                           , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . varName) [0 .. (arity - 1)]
                            , llFuncBlocks = [b]
                            }
 
@@ -173,16 +176,27 @@ trIFunction (IFunction qn arity vis _ body) = case body of
 trIBlock :: IBlock -> TrM LLBasicBlock
 trIBlock (IBlock vs as stmt) = do
     pushBlock $ makeBasicBlock []
-    -- TODO: Handle variable declarations? ('vs')
+    mapM_ trIVarDecl vs
     mapM_ trIAssign as
     trIStatement stmt
     popBlock
+
+--- Translates a variable declaration to LLVM IR instructions.
+trIVarDecl :: IVarDecl -> TrM ()
+trIVarDecl d = case d of
+    IVarDecl  i -> addInst $ LLLocalAssign (varName i) $ LLCallInst curryNodePtrType "curryNodeNewPlaceholder" []
+    IFreeDecl _ -> throwE "TODO: Free declarations are not implemented yet!"
 
 --- Translates a variable assignment to LLVM IR instructions
 --- and adds them to the topmost block.
 trIAssign :: IAssign -> TrM ()
 trIAssign a = case a of
-    IVarAssign i expr     -> void $ trExpr (Just $ varName i) expr
+    IVarAssign i expr     -> do
+        n <- trExpr Nothing expr
+        addInst $ LLCallInst void_ "curryNodeAssign"
+            [ LLValue curryNodePtrType $ LLLocalVar $ varName i
+            , LLValue curryNodePtrType $ LLLocalVar n
+            ]
     INodeAssign i js expr -> throwE "TODO: Node assign is not implemented yet!"
 
 --- Translates a statement to LLVM IR instructions.
@@ -293,10 +307,6 @@ trIQName (modName, locName, n) = "qn_" ++ escapeString modName ++ "_" ++ escapeS
 --- Fetches the name of a variable identified by an index.
 varName :: IVarIndex -> String
 varName i = "var_" ++ show i
-
---- Fetches the name/identifier of the nth function argument.
-argName :: Int -> String
-argName i = "arg_" ++ show i
 
 --- 'Escapes' a string for use in identifiers.
 escapeString :: String -> String
