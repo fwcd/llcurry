@@ -4,7 +4,7 @@ module LLCurry.IR.Translate
     , trIProg
     ) where
 
-import Control.Monad              ( void )
+import Control.Monad              ( void, join )
 import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.Except ( ExceptT, runExceptT, throwE )
 import Control.Monad.Trans.State  ( State, runState, get, modify )
@@ -12,11 +12,11 @@ import Data.Char                  ( ord )
 import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
                                   , IBlock (..), IQName, IVarIndex, IAssign (..)
                                   , IExpr (..), ILiteral (..), IStatement (..)
-                                  , IVarDecl (..)
+                                  , IVarDecl (..), IConsBranch (..)
                                   )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
-                                  , LLType (..)
+                                  , LLType (..), LLLabel (..)
                                   , i8, i64, double, void_, makeBasicBlock
                                   )
 import LLCurry.Utils.General      ( forM_, forFoldlM )
@@ -165,21 +165,22 @@ trIFunction (IFunction qn arity vis _ body) = case body of
                                          , llFuncArgTypes = replicate arity curryNodePtrType
                                          }
     IFuncBody block -> do
-        b <- trIBlock block
+        bs <- trIBlock Nothing block
         return $ LLFuncDef { llFuncType = curryNodePtrType 
                            , llFuncName = trIQName qn
                            , llFuncArgs = map (LLValue curryNodePtrType . LLLocalVar . varName) [0 .. (arity - 1)]
-                           , llFuncBlocks = [b]
+                           , llFuncBlocks = bs
                            }
 
---- Translates an ICurry block to LLVM IR.
-trIBlock :: IBlock -> TrM LLBasicBlock
-trIBlock (IBlock vs as stmt) = do
-    pushBlock $ makeBasicBlock []
+--- Translates an ICurry block to LLVM IR blocks.
+trIBlock :: Maybe String -> IBlock -> TrM [LLBasicBlock]
+trIBlock label (IBlock vs as stmt) = do
+    pushBlock $ LLBasicBlock label []
     mapM_ trIVarDecl vs
     mapM_ trIAssign as
-    trIStatement stmt
-    popBlock
+    b <- popBlock
+    bs <- trIStatement stmt
+    return $ b : bs
 
 --- Translates a variable declaration to LLVM IR instructions.
 trIVarDecl :: IVarDecl -> TrM ()
@@ -199,13 +200,32 @@ trIAssign a = case a of
             ]
     INodeAssign i js expr -> throwE "TODO: Node assign is not implemented yet!"
 
---- Translates a statement to LLVM IR instructions.
-trIStatement :: IStatement -> TrM ()
+--- Translates a statement to LLVM IR blocks.
+trIStatement :: IStatement -> TrM [LLBasicBlock]
 trIStatement stmt = case stmt of
     IReturn e -> do
+        pushBlock $ LLBasicBlock Nothing []
         n <- trExpr Nothing e
-        addInst $ LLReturnInst (LLValue curryNodePtrType (LLLocalVar n))
+        addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar n
+        b <- popBlock
+        return [b]
+    ICaseCons i brs -> do
+        j <- freshId
+        let el = "end_" ++ show j
+            be = LLBasicBlock (Just el) []
+        bs <- mapM trIConsBranch brs
+        pushBlock $ LLBasicBlock Nothing []
+        addInst $ LLSwitchInst (LLValue curryNodePtrType $ LLLocalVar $ varName i) (LLLabel el)
+            [(LLValue curryNodePtrType $ LLLocalVar $ trIQName qn, LLLabel n)
+            | (IConsBranch qn a _, (LLBasicBlock (Just n) _ : _)) <- zip brs bs]
+        b <- popBlock
+        return $ join bs ++ [be]
     _         -> throwE $ "TODO: Tried to translate unsupported statement " ++ show stmt
+
+trIConsBranch :: IConsBranch -> TrM [LLBasicBlock]
+trIConsBranch (IConsBranch qn a b) = do
+    i <- freshId
+    trIBlock (Just $ "case_" ++ show i) b -- TODO: Handle the root of the expression (var0)?
 
 --- Translates an expression to LLVM IR instructions, optionally
 --- with a custom identifier. Returns the variable name of the
