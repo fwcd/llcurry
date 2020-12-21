@@ -279,6 +279,24 @@ uint64_t curryNodeGetConstructor(struct CurryNode *node) {
     return node->value.data.constructor;
 }
 
+// Fetches a Curry node's floating-point value.
+double curryNodeGetFloating(struct CurryNode *node) {
+    assert(node->tag == TAG_FLOATING);
+    return node->value.floating;
+}
+
+// Fetches a Curry node's integer value.
+uint64_t curryNodeGetInteger(struct CurryNode *node) {
+    assert(node->tag == TAG_INTEGER);
+    return node->value.integer;
+}
+
+// Fetches a Curry node's character value.
+uint8_t curryNodeGetCharacter(struct CurryNode *node) {
+    assert(node->tag == TAG_CHARACTER);
+    return node->value.character;
+}
+
 // Prints a Curry node to stdout for debugging purposes.
 void curryNodePrint(struct CurryNode *node) {
     printf("CurryNode [%d refs] ", node->refCount);

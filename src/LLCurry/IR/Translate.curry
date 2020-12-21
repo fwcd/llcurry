@@ -12,7 +12,7 @@ import Data.Char                  ( ord )
 import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
                                   , IBlock (..), IQName, IVarIndex, IAssign (..)
                                   , IExpr (..), ILiteral (..), IStatement (..)
-                                  , IVarDecl (..), IConsBranch (..)
+                                  , IVarDecl (..), IConsBranch (..), ILitBranch (..)
                                   )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
@@ -139,6 +139,9 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFailure" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeAccess" [curryNodePtrType, i64]
     addGlobal $ LLFuncDecl i64 "curryNodeGetConstructor" [curryNodePtrType]
+    addGlobal $ LLFuncDecl double "curryNodeGetFloating" [curryNodePtrType]
+    addGlobal $ LLFuncDecl i64 "curryNodeGetInteger" [curryNodePtrType]
+    addGlobal $ LLFuncDecl i8 "curryNodeGetCharacter" [curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeEvaluate" [curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeAssign" [curryNodePtrType, curryNodePtrType]
     addGlobal $ LLFuncDecl void_ "curryNodeRetain" [curryNodePtrType]
@@ -239,14 +242,42 @@ trIStatement label stmt = case stmt of
             | (IConsBranch (_, _, c) a _, (LLBasicBlock (Just n) _ : _)) <- zip brs bs]
         b <- popBlock
         return $ b : (join bs ++ [be])
+    ICaseLit i brs@(br:_) -> do
+        el <- freshName "end"
+        be <- head <$> trIStatement (Just el) IExempt -- TODO: Handle the 'otherwise' case in a better way?
+        bs <- mapM trILitBranch brs
+        pushBlock $ LLBasicBlock Nothing []
+        cn <- freshName "constr"
+        let v = LLValue curryNodePtrType $ LLLocalVar $ varName i
+        addInst $ LLCallInst void_ "curryNodeEvaluate" [v]
+        -- We assume that literal case expressions only contain one type of values
+        -- and therefore determine it from the first branch.
+        addInst $ LLLocalAssign cn $ case br of
+            (ILitBranch (IInt _) _)   -> LLCallInst i64 "curryNodeGetInteger" [v]
+            (ILitBranch (IFloat _) _) -> LLCallInst double "curryNodeGetFloating" [v]
+            (ILitBranch (IChar _) _)  -> LLCallInst i8 "curryNodeGetCharacter" [v]
+        let cv = flip LLValue (LLLocalVar cn) $ case br of
+                    (ILitBranch (IInt _) _)   -> i64
+                    (ILitBranch (IFloat _) _) -> double
+                    (ILitBranch (IChar _) _)  -> i8
+        addInst $ LLSwitchInst cv (LLLabel el)
+            [(trILiteral lit, LLLabel n)
+            | (ILitBranch lit _, (LLBasicBlock (Just n) _ : _)) <- zip brs bs]
+        b <- popBlock
+        return $ b : (join bs ++ [be])
     _         -> throwE $ "TODO: Tried to translate unsupported statement " ++ show stmt
 
 -- TODO: Clean up code by using freshName where possible
 
 trIConsBranch :: IConsBranch -> TrM [LLBasicBlock]
-trIConsBranch (IConsBranch qn a b) = do
+trIConsBranch (IConsBranch _ _ b) = do
     i <- freshId
-    trIBlock (Just $ "case_" ++ show i) b -- TODO: Handle the root of the expression (var0)?
+    trIBlock (Just $ "ccase_" ++ show i) b
+
+trILitBranch :: ILitBranch -> TrM [LLBasicBlock]
+trILitBranch (ILitBranch _ b) = do
+    i <- freshId
+    trIBlock (Just $ "lcase_" ++ show i) b
 
 --- Translates an expression to LLVM IR instructions, optionally
 --- with a custom identifier. Returns the variable name of the
@@ -260,10 +291,11 @@ trExpr name e = do
         ILit lit       -> do
             -- Translate literal
             i <- freshId
-            let (fn, v) = case lit of
-                        IInt i   -> ("curryNodeNewInteger", LLValue i64 $ LLLitInt i)
-                        IChar c  -> ("curryNodeNewCharacter", LLValue i8 $ LLLitInt $ ord c)
-                        IFloat f -> ("curryNodeNewFloating", LLValue double $ LLLitFloat f)
+            let fn = case lit of
+                        IInt _   -> "curryNodeNewInteger"
+                        IChar _  -> "curryNodeNewCharacter"
+                        IFloat _ -> "curryNodeNewFloating"
+                v = trILiteral lit
                 n = maybe ("lit_" ++ show i) id name
             addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType fn [v]
             return n
@@ -340,6 +372,13 @@ trExpr name e = do
                     ]
             return n
         _ -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
+
+--- Translates a literal to an LLVM IR value.
+trILiteral :: ILiteral -> LLValue
+trILiteral lit = case lit of
+    IInt i   -> LLValue i64 $ LLLitInt i
+    IChar c  -> LLValue i8 $ LLLitInt $ ord c
+    IFloat f -> LLValue double $ LLLitFloat f
 
 --- Combines a qualified ICurry name to a single name/identifier.
 trIQName :: IQName -> String
