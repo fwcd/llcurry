@@ -136,6 +136,7 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFloating" [double]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewCharacter" [i8]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewPlaceholder" []
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFree" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFailure" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeAccess" [curryNodePtrType, i64]
     addGlobal $ LLFuncDecl i64 "curryNodeGetConstructor" [curryNodePtrType]
@@ -199,7 +200,7 @@ trIBlock label (IBlock vs as stmt) = do
 trIVarDecl :: IVarDecl -> TrM ()
 trIVarDecl d = case d of
     IVarDecl  i -> addInst $ LLLocalAssign (varName i) $ LLCallInst curryNodePtrType "curryNodeNewPlaceholder" []
-    IFreeDecl _ -> throwE "TODO: Free declarations are not implemented yet!"
+    IFreeDecl i -> addInst $ LLLocalAssign (varName i) $ LLCallInst curryNodePtrType "curryNodeNewFree" []
 
 --- Translates a variable assignment to LLVM IR instructions
 --- and adds them to the topmost block.
