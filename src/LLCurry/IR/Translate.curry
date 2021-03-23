@@ -212,7 +212,12 @@ trIAssign a = case a of
             , LLValue curryNodePtrType $ LLLocalVar n
             ]
     INodeAssign i js expr -> do
-
+        an <- trExpr (IVarAccess i js)
+        n  <- trExpr expr
+        addInst $ LLCallInst void_ "curryNodeAssign"
+            [ LLValue curryNodePtrType $ LLLocalVar an
+            , LLValue curryNodePtrType $ LLLocalVar n
+            ]
 
 --- Translates a statement to LLVM IR blocks.
 trIStatement :: Maybe String -> IStatement -> TrM [LLBasicBlock]
