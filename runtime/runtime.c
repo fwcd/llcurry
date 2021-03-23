@@ -146,22 +146,6 @@ struct CurryNode *curryNodeNewFailure(void) {
     return curryNodeAllocate(TAG_FAILURE);
 }
 
-// Accesses a node's nth argument.
-struct CurryNode *curryNodeAccess(struct CurryNode *node, uint64_t n) {
-    assert(node->tag == TAG_FUNCTION || node->tag == TAG_DATA);
-    assert(n >= 0);
-    switch (node->tag) {
-    case TAG_FUNCTION:
-        assert(n < node->value.function.argumentCount);
-        return node->value.function.arguments[n];
-    case TAG_DATA:
-        assert(n < node->value.data.argumentCount);
-        return node->value.data.arguments[n];
-    default:
-        return NULL;
-    }
-}
-
 // Creates a new node holding an 8-bit character.
 struct CurryNode *curryNodeNewCharacter(uint8_t character) {
     struct CurryNode *node = curryNodeAllocate(TAG_CHARACTER);
@@ -301,7 +285,7 @@ void curryNodeEvaluate(struct CurryNode *node) {
 }
 
 // Fetches the nth child of a Curry node.
-struct CurryNode *curryNodeGetChild(struct CurryNode *node, uint8_t i) {
+struct CurryNode *curryNodeAccess(struct CurryNode *node, uint8_t i) {
     switch (node->tag) {
     case TAG_FUNCTION:
         {

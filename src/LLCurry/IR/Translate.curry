@@ -211,7 +211,8 @@ trIAssign a = case a of
             [ LLValue curryNodePtrType $ LLLocalVar $ varName i
             , LLValue curryNodePtrType $ LLLocalVar n
             ]
-    INodeAssign i js expr -> throwE "TODO: Node assign is not implemented yet!"
+    INodeAssign i js expr -> do
+
 
 --- Translates a statement to LLVM IR blocks.
 trIStatement :: Maybe String -> IStatement -> TrM [LLBasicBlock]
@@ -303,7 +304,7 @@ trExpr e = do
                 n <- freshName "access"
                 addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeAccess"
                     [ LLValue curryNodePtrType $ LLLocalVar m
-                    , LLValue i64 $ LLLitInt j'
+                    , LLValue i8 $ LLLitInt j'
                     ]
                 return n
         IFCall qn@(_, ln, _) as -> do
