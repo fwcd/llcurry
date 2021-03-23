@@ -26,6 +26,7 @@ const uint8_t TAG_FLOATING    = 4; // Floating-point numbers
 const uint8_t TAG_CHARACTER   = 5; // 8-bit characters
 const uint8_t TAG_PLACEHOLDER = 6; // Empty nodes
 const uint8_t TAG_FAILURE     = 7; // Failure nodes
+const uint8_t TAG_FREE        = 8; // Free nodes
 
 struct CurryNode;
 
@@ -71,6 +72,10 @@ struct CurryNode {
         uint8_t character;
     } value;
 };
+
+void curryNodeRetain(struct CurryNode *node);
+
+void curryNodeRelease(struct CurryNode *node);
 
 // Allocates a new Curry node. This function is internal to the runtime
 // and should not be called by generated code.
@@ -119,6 +124,8 @@ struct CurryNode *curryNodeNewChoice(struct CurryNode *left, struct CurryNode *r
     struct CurryChoice *choice = &node->value.choice;
     choice->left = left;
     choice->right = right;
+    curryNodeRetain(left);
+    curryNodeRetain(right);
     return node;
 }
 
@@ -141,6 +148,11 @@ struct CurryNode *curryNodeNewPlaceholder(void) {
     return curryNodeAllocate(TAG_PLACEHOLDER);
 }
 
+// Creates a new free node.
+struct CurryNode *curryNodeNewFree(void) {
+    return curryNodeAllocate(TAG_FREE);
+}
+
 // Creates a new failure node.
 struct CurryNode *curryNodeNewFailure(void) {
     return curryNodeAllocate(TAG_FAILURE);
@@ -158,9 +170,7 @@ void curryNodeRetain(struct CurryNode *node) {
     node->refCount++;
 }
 
-void curryNodeRelease(struct CurryNode *node);
-
-// Internal function for releasing only the arguments.
+// Internal function for releasing AND FREEING the arguments.
 void curryNodeReleaseArguments(struct CurryNode *node) {
     struct CurryNode **arguments = NULL;
     int argumentCount;
@@ -186,6 +196,7 @@ void curryNodeReleaseArguments(struct CurryNode *node) {
         for (int i = 0; i < argumentCount; i++) {
             curryNodeRelease(arguments[i]);
         }
+        free(arguments);
     }
 }
 
@@ -225,7 +236,6 @@ void curryNodeRelease(struct CurryNode *node) {
     node->refCount--;
     if (node->refCount <= 0) {
         curryNodeReleaseArguments(node);
-        free(node);
     }
 }
 
@@ -418,6 +428,9 @@ void curryNodePrint(struct CurryNode *node) {
         break;
     case TAG_PLACEHOLDER:
         printf("PLACEHOLDER");
+        break;
+    case TAG_FREE:
+        printf("FREE");
         break;
     case TAG_FAILURE:
         printf("FAILURE");
