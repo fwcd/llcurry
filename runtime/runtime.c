@@ -300,6 +300,41 @@ void curryNodeEvaluate(struct CurryNode *node) {
     }
 }
 
+// Fetches the nth child of a Curry node.
+struct CurryNode *curryNodeGetChild(struct CurryNode *node, uint8_t i) {
+    switch (node->tag) {
+    case TAG_FUNCTION:
+        {
+            struct CurryFunction *function = &node->value.function;
+            assert(i < function->argumentCount);
+            return function->arguments[i];
+        }
+    case TAG_DATA:
+        {
+            struct CurryData *data = &node->value.data;
+            assert(i < data->argumentCount);
+            return data->arguments[i];
+        }
+    case TAG_CHOICE:
+        {
+            assert(i < 2);
+            struct CurryChoice *choice = &node->value.choice;
+            switch (i) {
+            case 0:
+                return choice->left;
+            case 1:
+                return choice->right;
+            default:
+                fprintf(stderr, "Invalid choice index %d!\n", i);
+                exit(1);
+            }
+        }
+    default:
+        fprintf(stderr, "Cannot get child of Curry node with tag %d!", i);
+        exit(1);
+    }
+}
+
 // Fetches a Curry data node's constructor.
 uint64_t curryNodeGetConstructor(struct CurryNode *node) {
     assert(node->tag == TAG_DATA);
@@ -361,6 +396,9 @@ void curryNodePrint(struct CurryNode *node) {
     case TAG_FAILURE:
         printf("FAILURE");
         break;
+    case TAG_CHOICE:
+        printf("CHOICE");
+        break;
     default:
         printf("UNKNOWN");
         break;
@@ -370,6 +408,6 @@ void curryNodePrint(struct CurryNode *node) {
 
 // Terminates the program with a generic error message.
 void curryExempt(void) {
-    printf("Exempt!\n");
+    fprintf(stderr, "Exempt!\n");
     exit(1);
 }
