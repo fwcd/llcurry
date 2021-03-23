@@ -174,6 +174,10 @@ void curryNodeReleaseArguments(struct CurryNode *node) {
         arguments = node->value.function.arguments;
         argumentCount = node->value.function.argumentCount;
         break;
+    case TAG_CHOICE:
+        curryNodeRelease(node->value.choice.left);
+        curryNodeRelease(node->value.choice.right);
+        break;
     default:
         break;
     }
@@ -181,6 +185,35 @@ void curryNodeReleaseArguments(struct CurryNode *node) {
     if (arguments != NULL) {
         for (int i = 0; i < argumentCount; i++) {
             curryNodeRelease(arguments[i]);
+        }
+    }
+}
+
+// Internal function for retaining only the arguments.
+void curryNodeRetainArguments(struct CurryNode *node) {
+    struct CurryNode **arguments = NULL;
+    int argumentCount;
+
+    switch (node->tag) {
+    case TAG_DATA:
+        arguments = node->value.data.arguments;
+        argumentCount = node->value.data.argumentCount;
+        break;
+    case TAG_FUNCTION:
+        arguments = node->value.function.arguments;
+        argumentCount = node->value.function.argumentCount;
+        break;
+    case TAG_CHOICE:
+        curryNodeRetain(node->value.choice.left);
+        curryNodeRetain(node->value.choice.right);
+        break;
+    default:
+        break;
+    }
+
+    if (arguments != NULL) {
+        for (int i = 0; i < argumentCount; i++) {
+            curryNodeRetain(arguments[i]);
         }
     }
 }
@@ -202,8 +235,9 @@ void curryNodeAssign(struct CurryNode *node, struct CurryNode *src) {
     assert(src != NULL);
     assert(src != node);
     curryNodeReleaseArguments(node);
-    src->tag = node->tag;
-    switch (node->tag) {
+    curryNodeRetainArguments(src);
+    node->tag = src->tag;
+    switch (src->tag) {
     case TAG_FUNCTION:
         {
             struct CurryFunction *srcFunction = &src->value.function;
@@ -225,6 +259,14 @@ void curryNodeAssign(struct CurryNode *node, struct CurryNode *src) {
             data->type = srcData->type;
         }
         break;
+    case TAG_CHOICE:
+        {
+            struct CurryChoice *srcChoice = &src->value.choice;
+            struct CurryChoice *choice = &node->value.choice;
+            choice->left = srcChoice->left;
+            choice->right = srcChoice->right;
+        }
+        break;
     case TAG_INTEGER:
         node->value.integer = src->value.integer;
         break;
@@ -234,7 +276,7 @@ void curryNodeAssign(struct CurryNode *node, struct CurryNode *src) {
     case TAG_CHARACTER:
         node->value.character = src->value.character;
         break;
-    case TAG_PLACEHOLDER:
+    default:
         break;
     }
 }
