@@ -364,6 +364,16 @@ trExpr e = do
                     , LLValue curryNodePtrType $ LLLocalVar an
                     ]
             return n
+        IOr e1 e2 -> do
+            -- Translate non-deterministic choice
+            n <- freshName "choice"
+            e1n <- trExpr e1
+            e2n <- trExpr e2
+            addInst $ LLLocalAssign n $ LLCallInst curryNodePtrType "curryNodeNewChoice"
+                [ LLValue curryNodePtrType $ LLLocalVar e1n
+                , LLValue curryNodePtrType $ LLLocalVar e2n
+                ]
+            return n
         _ -> throwE $ "TODO: Tried to translate unsupported expression " ++ show e
 
 --- Translates a literal to an LLVM IR value.
