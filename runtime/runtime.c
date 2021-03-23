@@ -20,13 +20,12 @@
 // of the tag.
 const uint8_t TAG_DATA        = 0; // Applied (data) constructors
 const uint8_t TAG_FUNCTION    = 1; // (Partially applied) functions
-const uint8_t TAG_INTEGER     = 2; // 64-bit integers
-const uint8_t TAG_FLOATING    = 3; // Floating-point numbers
-const uint8_t TAG_CHARACTER   = 4; // 8-bit characters
-const uint8_t TAG_PLACEHOLDER = 5; // Empty nodes
-const uint8_t TAG_FAILURE     = 6; // Failure nodes
-
-// TODO: Choices!
+const uint8_t TAG_CHOICE      = 2; // Non-deterministic choice nodes
+const uint8_t TAG_INTEGER     = 3; // 64-bit integers
+const uint8_t TAG_FLOATING    = 4; // Floating-point numbers
+const uint8_t TAG_CHARACTER   = 5; // 8-bit characters
+const uint8_t TAG_PLACEHOLDER = 6; // Empty nodes
+const uint8_t TAG_FAILURE     = 7; // Failure nodes
 
 struct CurryNode;
 
@@ -51,6 +50,12 @@ struct CurryFunction {
     struct CurryNode *(*funcPtr)(struct CurryNode *);
 };
 
+// Represents a non-deterministic, binary choice.
+struct CurryChoice {
+    struct CurryNode *left;
+    struct CurryNode *right;
+};
+
 // Represents a value from Curry at runtime. Curry nodes are allocated on
 // the heap and reference-counted. The initial reference count is always
 // 1 and it is the caller's responsibility to insert retain/release calls.
@@ -60,6 +65,7 @@ struct CurryNode {
     union {
         struct CurryData data;
         struct CurryFunction function;
+        struct CurryChoice choice;
         uint64_t integer;
         double floating;
         uint8_t character;
@@ -101,6 +107,18 @@ struct CurryNode *curryNodeNewFunction(uint8_t arity, struct CurryNode *(*funcPt
     function->argumentCount = 0;
     function->arguments = malloc(sizeof(struct CurryNode *) * arity);
     function->funcPtr = funcPtr;
+    return node;
+}
+
+// Creates a new choice node from the given two nodes.
+struct CurryNode *curryNodeNewChoice(struct CurryNode *left, struct CurryNode *right) {
+    assert(left != NULL);
+    assert(right != NULL);
+
+    struct CurryNode *node = curryNodeAllocate(TAG_CHOICE);
+    struct CurryChoice *choice = &node->value.choice;
+    choice->left = left;
+    choice->right = right;
     return node;
 }
 
