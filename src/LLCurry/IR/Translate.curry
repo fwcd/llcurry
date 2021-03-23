@@ -138,7 +138,7 @@ addRuntimeDecls = do
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewPlaceholder" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFree" []
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFailure" []
-    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeAccess" [curryNodePtrType, i64]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeAccess" [curryNodePtrType, i8]
     addGlobal $ LLFuncDecl i64 "curryNodeGetConstructor" [curryNodePtrType]
     addGlobal $ LLFuncDecl double "curryNodeGetFloating" [curryNodePtrType]
     addGlobal $ LLFuncDecl i64 "curryNodeGetInteger" [curryNodePtrType]
