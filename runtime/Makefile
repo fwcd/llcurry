@@ -1,8 +1,8 @@
-SRC = $(CURDIR)/runtime.c
-LL = $(CURDIR)/runtime.ll
+SRC = $(CURDIR)/runtime.c $(CURDIR)/prelude.c
+LL = $(CURDIR)/runtime.ll $(CURDIR)/prelude.ll
 
 .PHONY: all
 all: $(LL)
 
-$(LL): $(SRC)
-	clang -S -emit-llvm -Wall $(SRC)
+%.ll: %.c
+	clang -S -emit-llvm -Wall $<
