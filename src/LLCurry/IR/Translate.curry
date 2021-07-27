@@ -17,7 +17,7 @@ import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
                                   )
 import LLCurry.IR.Types           ( LLProg (..), LLBasicBlock (..), LLInst (..)
                                   , LLGlobal (..), LLValue (..), LLUntyped (..)
-                                  , LLType (..), LLLabel (..)
+                                  , LLType (..), LLLabel (..), LLReturnValue (..)
                                   , i8, i64, double, void_, makeBasicBlock
                                   )
 import LLCurry.Utils.General      ( forM_, forFoldlM )
@@ -193,8 +193,8 @@ trIFuncBody args body = case body of
             n' = "external_" ++ n
         rn <- freshName "result"
         addGlobal $ LLFuncDecl curryNodePtrType n' [curryNodePtrType]
-        addInst $ LLLocalAssign rn $ LLCallInst curryNodePtrType n' args
-        addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar rn
+        addInst $ LLCallInst void_ n' args
+        addInst $ LLReturnInst LLReturnVoid
         b <- popBlock
         return [b]
     IFuncBody block -> trIBlock Nothing block
@@ -245,7 +245,7 @@ trIStatement label stmt = case stmt of
     IReturn e -> do
         pushBlock $ LLBasicBlock label []
         n <- trExpr e
-        addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar n
+        addInst $ LLReturnInst $ LLReturnValue $ LLValue curryNodePtrType $ LLLocalVar n
         b <- popBlock
         return [b]
     ICaseCons i brs -> do

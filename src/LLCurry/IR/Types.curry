@@ -1,6 +1,6 @@
 module LLCurry.IR.Types
     ( LLProg (..), LLGlobal (..), LLBasicBlock (..)
-    , LLInst (..), LLUnaryOp (..), LLBinaryOp (..)
+    , LLInst (..), LLUnaryOp (..), LLBinaryOp (..), LLReturnValue (..)
     , LLLabel (..), LLValue (..), LLUntyped (..), LLType (..)
     , i1, i8, i32, i64, float, double, void_
     , makeBasicBlock
@@ -53,10 +53,15 @@ data LLBasicBlock = LLBasicBlock { llBasicBlockName :: Maybe String
                                  }
     deriving (Show, Eq)
 
+-- A return value in LLVM IR.
+data LLReturnValue = LLReturnValue LLValue
+                   | LLReturnVoid
+    deriving (Show, Eq)
+
 -- An instruction/statement in LLVM IR.
 data LLInst = LLLocalAssign String LLInst                       -- not an actual instruction, used to represent SSA-assignments
               -- * Terminator instructions
-            | LLReturnInst LLValue                              -- Returned value
+            | LLReturnInst LLReturnValue                        -- Returned value
             | LLUncondBranchInst LLLabel                        -- Block label (unconditional jump)
             | LLCondBranchInst LLValue LLLabel LLLabel          -- Condition value, ifTrue block label, ifFalse block label
             | LLSwitchInst LLValue LLLabel [(LLValue, LLLabel)] -- Condition value, otherwise block label, values and block labels

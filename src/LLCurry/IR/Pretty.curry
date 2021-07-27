@@ -3,7 +3,7 @@ module LLCurry.IR.Pretty where
 import Prelude hiding ( empty )
 
 import LLCurry.IR.Types     ( LLProg (..), LLGlobal (..), LLInst (..), LLBasicBlock (..)
-                            , LLBinaryOp (..), LLUnaryOp (..)
+                            , LLBinaryOp (..), LLUnaryOp (..), LLReturnValue (..)
                             , LLValue (..), LLLabel (..), LLUntyped (..), LLType (..)
                             )
 import Text.Pretty          ( Pretty (..), Doc
@@ -48,6 +48,11 @@ instance Pretty LLGlobal where
 instance Pretty LLBasicBlock where
     pretty bb = maybe empty ((<> colon) . text) (llBasicBlockName bb)
            $$ vcat (map pretty $ llBasicBlockInsts bb)
+
+instance Pretty LLReturnValue where
+    pretty v = case v of
+        LLReturnValue v -> pretty v
+        LLReturnVoid    -> text "void"
 
 instance Pretty LLInst where
     pretty inst = case inst of
