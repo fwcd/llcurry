@@ -192,6 +192,7 @@ trIFuncBody args body = case body of
         let n  = intercalate "_" $ map escapeString $ split (== '.') name
             n' = "external_" ++ n
         rn <- freshName "result"
+        addGlobal $ LLFuncDecl curryNodePtrType n' [curryNodePtrType]
         addInst $ LLLocalAssign rn $ LLCallInst curryNodePtrType n' args
         addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar rn
         b <- popBlock
