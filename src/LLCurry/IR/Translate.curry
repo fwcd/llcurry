@@ -190,7 +190,9 @@ trIFuncBody args body = case body of
         pushBlock $ LLBasicBlock Nothing []
         let n  = intercalate "_" $ map escapeString $ split (== '.') name
             n' = "external_" ++ n
-        addInst $ LLCallInst curryNodePtrType n' args
+        rn <- freshName "result"
+        addInst $ LLLocalAssign rn $ LLCallInst curryNodePtrType n' args
+        addInst $ LLReturnInst $ LLValue curryNodePtrType $ LLLocalVar rn
         b <- popBlock
         return [b]
     IFuncBody block -> trIBlock Nothing block
