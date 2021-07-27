@@ -1,5 +1,5 @@
-SRC = $(CURDIR)/runtime.c $(CURDIR)/prelude.c
-LL = $(CURDIR)/runtime.ll $(CURDIR)/prelude.ll
+MODULES = runtime prelude_external
+LL = $(MODULES:%=$(CURDIR)/%.ll)
 
 .PHONY: all
 all: $(LL)
