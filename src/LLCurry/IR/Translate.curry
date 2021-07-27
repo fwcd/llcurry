@@ -174,22 +174,23 @@ trIProg (IProg mod imps types funcs) = do
 trIFunction :: IFunction -> TrM LLGlobal
 trIFunction (IFunction qn arity vis _ body) = do
     -- TODO: Use visibility!
-    bs <- trIFuncBody body
+    let args = [LLValue curryNodePtrType $ LLLocalVar $ varName 0]
+    bs <- trIFuncBody args body
     return $ LLFuncDef { llFuncType = curryNodePtrType 
                        , llFuncName = trIQName qn
-                       , llFuncArgs = [LLValue curryNodePtrType $ LLLocalVar $ varName 0]
+                       , llFuncArgs = args
                        , llFuncBlocks = bs
                        }
 
 --- Translates an ICurry function body to LLVM IR blocks.
-trIFuncBody :: IFuncBody -> TrM [LLBasicBlock]
-trIFuncBody body = case body of
+trIFuncBody :: [LLValue] -> IFuncBody -> TrM [LLBasicBlock]
+trIFuncBody args body = case body of
     IExternal name  -> do
         -- Generate call into external implementation
         pushBlock $ LLBasicBlock Nothing []
         let n  = intercalate "_" $ map escapeString $ split (== '.') name
             n' = "external_" ++ n
-        addInst $ LLCallInst curryNodePtrType n' []
+        addInst $ LLCallInst curryNodePtrType n' args
         b <- popBlock
         return [b]
     IFuncBody block -> trIBlock Nothing block
