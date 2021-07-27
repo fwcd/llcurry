@@ -133,6 +133,7 @@ addRuntimeDecls = do
     addGlobal $ LLOpaqueTypeDecl curryNodeName
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewData" [i8, i64, i64]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFunction" [i8, curryFunctionPtrType]
+    addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewChoice" [curryNodePtrType, curryFunctionPtrType]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewInteger" [i64]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewFloating" [double]
     addGlobal $ LLFuncDecl curryNodePtrType "curryNodeNewCharacter" [i8]
