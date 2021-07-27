@@ -9,6 +9,7 @@ import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.Except ( ExceptT, runExceptT, throwE )
 import Control.Monad.Trans.State  ( State, runState, get, modify )
 import Data.Char                  ( ord )
+import Data.List                  ( split, intercalate )
 import ICurry.Types               ( IProg (..), IFunction (..), IFuncBody (..)
                                   , IBlock (..), IQName, IVarIndex, IAssign (..)
                                   , IExpr (..), ILiteral (..), IStatement (..)
@@ -171,20 +172,27 @@ trIProg (IProg mod imps types funcs) = do
 
 --- Translates an ICurry function to LLVM IR.
 trIFunction :: IFunction -> TrM LLGlobal
-trIFunction (IFunction qn arity vis _ body) = case body of
+trIFunction (IFunction qn arity vis _ body) = do
     -- TODO: Use visibility!
-    -- TODO: Figure out whether to use qn or name for external functions
-    IExternal name  -> return LLFuncDecl { llFuncType = curryNodePtrType
-                                         , llFuncName = name
-                                         , llFuncArgTypes = [curryNodePtrType]
-                                         }
-    IFuncBody block -> do
-        bs <- trIBlock Nothing block
-        return $ LLFuncDef { llFuncType = curryNodePtrType 
-                           , llFuncName = trIQName qn
-                           , llFuncArgs = [LLValue curryNodePtrType $ LLLocalVar $ varName 0]
-                           , llFuncBlocks = bs
-                           }
+    bs <- trIFuncBody body
+    return $ LLFuncDef { llFuncType = curryNodePtrType 
+                       , llFuncName = trIQName qn
+                       , llFuncArgs = [LLValue curryNodePtrType $ LLLocalVar $ varName 0]
+                       , llFuncBlocks = bs
+                       }
+
+--- Translates an ICurry function body to LLVM IR blocks.
+trIFuncBody :: IFuncBody -> TrM [LLBasicBlock]
+trIFuncBody body = case body of
+    IExternal name  -> do
+        -- Generate call into external implementation
+        pushBlock $ LLBasicBlock Nothing []
+        let n  = intercalate "_" $ map escapeString $ split (== '.') name
+            n' = "external_" ++ n
+        addInst $ LLCallInst curryNodePtrType n' []
+        b <- popBlock
+        return [b]
+    IFuncBody block -> trIBlock Nothing block
 
 --- Translates an ICurry block to LLVM IR blocks.
 trIBlock :: Maybe String -> IBlock -> TrM [LLBasicBlock]
